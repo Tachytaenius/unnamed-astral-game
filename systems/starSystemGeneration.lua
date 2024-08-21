@@ -87,15 +87,15 @@ local function generateSystem(parent, curveInfo, depth, ownI, state)
 			local thisRadius = (thisVolume / (2 / 3 * consts.tau)) ^ (1 / 3)
 			body:give("celestialMass", thisMass)
 			body:give("celestialRadius", thisRadius)
-			-- if love.math.random() < 1 then
-			-- 	body:give("atmosphere",
-			-- 		thisRadius * util.randomRange(0.01, 0.1),
-			-- 		{1, 1, 1},
-			-- 		util.randomRange(3, 5),
-			-- 		0,
-			-- 		util.randomRange(0.5, 2)
-			-- 	)
-			-- end
+			if love.math.random() < 1 then
+				body:give("atmosphere",
+					thisRadius * util.randomRange(0.001, 0.05),
+					{1, 1, 1},
+					util.randomRange(3, 5),
+					0,
+					util.randomRange(0.5, 2)
+				)
+			end
 		end
 
 		-- TODO: Tidal locking (only if has parent)

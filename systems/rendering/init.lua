@@ -34,7 +34,8 @@ function rendering:init()
 	until hNextPowerOf2 >= h
 	local highest = math.max(wNextPowerOf2, hNextPowerOf2)
 	wNextPowerOf2, hNextPowerOf2 = highest, highest
-	self.lightCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f"}) -- I have no idea what its units are. nits?
+	self.lightCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f"})
+	self.atmosphereLightCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f"}) -- Separated and rejoined during tonemapping because of absolute colours being mixed into the light canvas
 	self.maxLuminanceCanvas = love.graphics.newCanvas(wNextPowerOf2, hNextPowerOf2, {format = "r32f", mipmaps = "manual"})
 	self.averageLuminanceCanvas = love.graphics.newCanvas(wNextPowerOf2, hNextPowerOf2, {format = "r32f", mipmaps = "manual"})
 	self.positionCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f"})

@@ -17,8 +17,10 @@ vec4 position(mat4 loveTransform, vec4 vertexPosition) {
 
 #ifdef PIXEL
 
+uniform bool negativeAlpha;
+
 void effect() {
-	love_Canvases[0] = vec4(VaryingColor.rgb, 1.0); // lightCanvas
+	love_Canvases[0] = vec4(VaryingColor.rgb, negativeAlpha ? -1.0 : 1.0); // lightCanvas (negative alpha means "multiply by max luminance in scene")
 	love_Canvases[1] = vec4(fragmentPosition, 1.0); // positionCanvas
 }
 

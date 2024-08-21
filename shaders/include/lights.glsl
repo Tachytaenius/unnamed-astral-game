@@ -72,7 +72,7 @@ bool shadowCast(Light light, vec3 pointPosition) {
 		float dist = length(difference);
 		vec3 direction = difference / dist;
 		ConvexRaycastResult result = sphereRaycast2(sphere.position, sphere.radius, pointPosition, direction);
-		if (result.hit && 0.0 <= result.t1 && result.t1 <= dist) { // If the sun is sufficiently far away that float precision can't tell that a planet on the other side of the sun isn't creating a shadow, it might cast a shadow. But such faraway bodies shouldn't be part of the shadow spheres list
+		if (result.hit && result.t2 >= 0.0 && result.t1 <= dist) { // If the sun is sufficiently far away that float precision can't tell that a planet on the other side of the sun isn't creating a shadow, it might cast a shadow. But such faraway bodies shouldn't be part of the shadow spheres list
 			return true;
 		}
 	}

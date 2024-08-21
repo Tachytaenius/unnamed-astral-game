@@ -38,16 +38,22 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	-- Clear canvasses
 	love.graphics.setCanvas({
 		self.lightCanvas,
+		self.atmosphereLightCanvas,
 		self.positionCanvas,
 		depthstencil = self.depthBuffer
 	})
-	love.graphics.clear({0, 0, 0, 1}, {0, 0, 0, 0}, false, true)
+	love.graphics.clear({0, 0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 0}, false, true)
 
 	-- TODO: Draw skybox to light canvas, no depth or position
 	love.graphics.setDepthMode("always", false)
 	-- Skybox shader, dummy texture, light canvas...
 
 	-- Draw bodies to light canvas, with depth and position information
+	love.graphics.setCanvas({
+		self.lightCanvas,
+		self.positionCanvas,
+		depthstencil = self.depthBuffer
+	})
 	love.graphics.setDepthMode("lequal", true)
 	love.graphics.setShader(self.bodyShader)
 	for _, body in ipairs(self.bodies) do
@@ -67,11 +73,13 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		love.graphics.draw(self.bodyMesh)
 	end
 
-	-- Draw orbit lines to light canvas, with depth and position information
-	-- The idea is that they are like (illusory) glowing solids. Just superimposing them over atmosphere has an undesirable look
+	-- Draw orbit lines to light canvas, with depth and position information. Their pixels have a negative alpha to indicate that they are absolute colours that should skip tonemapping
+	-- The idea is that they are like (illusory) solids in space. Just superimposing them over atmosphere has an undesirable look
 	if settings.graphics.drawOrbitLines then
 		love.graphics.setShader(self.lineShader)
 		love.graphics.setColor(consts.orbitLineColour)
+		self.lineShader:send("negativeAlpha", true)
+		love.graphics.setBlendMode("replace", "premultiplied")
 		love.graphics.setMeshCullMode("none")
 		love.graphics.setWireframe(true)
 		for _, body in ipairs(self.bodies) do
@@ -95,7 +103,11 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		love.graphics.setMeshCullMode("back")
 	end
 
-	-- Draw atmospheres to light canvas, using position information but not writing to it
+	-- Draw atmospheres to atmosphere light canvas, using position information but not writing to it
+	love.graphics.setCanvas({
+		self.atmosphereLightCanvas,
+		depthstencil = self.depthBuffer
+	})
 	love.graphics.setDepthMode("always", false)
 	love.graphics.setBlendMode("add")
 	love.graphics.setShader(self.atmosphereShader)
@@ -108,7 +120,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		self.atmosphereShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.atmosphereShader:send("bodyRadius", body.celestialRadius.value)
 		self.atmosphereShader:send("densityPower", atmosphere.densityPower)
-		self.atmosphereShader:send("atmosphereLuminousFlux", atmosphere.atmosphereLuminousFlux)
+		self.atmosphereShader:send("atmosphereEmissiveness", atmosphere.luminousFlux) -- I don't know anymore :( I'd rather just do it as art than science yk
 		-- TODO: Cap brightness
 		self.atmosphereShader:send("atmosphereRadius", body.celestialRadius.value + atmosphere.height)
 		self.atmosphereShader:send("atmosphereDensity", atmosphere.density)
@@ -141,6 +153,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 
 	-- Get log of luminance of lightCanvas into canvasses that use it
 	love.graphics.setShader(self.storeLuminanceShader)
+	self.storeLuminanceShader:send("atmosphereLightCanvas", self.atmosphereLightCanvas)
 	love.graphics.setCanvas(self.maxLuminanceCanvas)
 	-- NOTE: Gamma-correct rendering causes the canvas to NOT have a value of -1, but it is negative, and we only check for negativity in the average luminance shader
 	love.graphics.clear(-1, 0, 0)
@@ -177,12 +190,9 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	-- Draw light canvas to output canvas with HDR, then draw HUD canvas as normal
 	love.graphics.setCanvas(outputCanvas)
 	love.graphics.clear()
-	print(self.averageLuminanceCanvas:newImageData(nil, self.averageLuminanceCanvas:getMipmapCount()):getPixel(0, 0))
-	print(self.maxLuminanceCanvas:newImageData(nil, self.maxLuminanceCanvas:getMipmapCount()):getPixel(0, 0))
-	print()
-	self.tonemappingShader:send("averageLuminanceCanvas", self.averageLuminanceCanvasViews[self.averageLuminanceCanvas:getMipmapCount()])
 	self.tonemappingShader:send("maxLuminanceCanvas", self.maxLuminanceCanvasViews[self.maxLuminanceCanvas:getMipmapCount()])
 	love.graphics.setShader(self.tonemappingShader)
+	self.tonemappingShader:send("atmosphereLightCanvas", self.atmosphereLightCanvas)
 	love.graphics.draw(self.lightCanvas)
 	love.graphics.setShader()
 	love.graphics.draw(self.HUDCanvas)

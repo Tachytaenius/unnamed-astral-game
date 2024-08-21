@@ -36,16 +36,24 @@ vec3 tachy2(vec3 inColour, float averageLuminance, float maxLuminance) {
 	return inColour / inColourLuminance * outColourLuminance;
 }
 
-vec4 effect(vec4 colour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
-	vec3 inColour = Texel(image, textureCoords).rgb;
+// Third tonemapper of mine, based on the one above
+vec3 tachy3(vec3 inColour, float maxLuminance) {
+	return inColour / maxLuminance;
+}
 
-	// vec3 outColour = inColour;
-	// vec3 outColour = tachy(inColour, maxLuminance);
-	// vec3 outColour = reinhard(inColour);
-	// vec3 outColour = jodieReinhard(inColour);
+uniform sampler2D atmosphereLightCanvas;
+
+vec4 effect(vec4 colour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
 	float averageLuminance = Texel(averageLuminanceCanvas, vec2(0.5)).r;
 	float maxLuminance = Texel(maxLuminanceCanvas, vec2(0.5)).r;
-	vec3 outColour = tachy2(inColour, averageLuminance, maxLuminance);
+
+	vec4 inSampleSolid = Texel(image, textureCoords);
+	vec4 inSampleAtmosphere = Texel(atmosphereLightCanvas, textureCoords);
+	vec3 inColour =
+		(inSampleSolid.a >= 0.0 ? inSampleSolid.rgb : maxLuminance * inSampleSolid.rgb)
+		+ inSampleAtmosphere.rgb;
+
+	vec3 outColour = tachy3(inColour, maxLuminance);
 
 	return vec4(outColour, 1.0);
 }
