@@ -4,7 +4,8 @@ return {
 	graphics = {
 		canvasScale = 1,
 		fullscreen = false,
-		drawOrbitLines = true
+		drawOrbitLines = true,
+		drawBodyReticles = true
 	},
 	controls = {
 		celestialCamera = {

@@ -19,12 +19,50 @@ for _, moduleName in ipairs({
 end
 
 function rendering:init()
-	self.lightCanvas = love.graphics.newCanvas(consts.canvasSystemWidth, consts.canvasSystemHeight, {format = "rgba16f"})
-	self.positionCanvas = love.graphics.newCanvas(consts.canvasSystemWidth, consts.canvasSystemHeight, {format = "rgba32f"})
-	self.depthBuffer = love.graphics.newCanvas(consts.canvasSystemWidth, consts.canvasSystemHeight, {format = "depth32f"})
+	-- Canvasses
+	local w, h = consts.canvasSystemWidth, consts.canvasSystemHeight
+	local wNextPowerOf2, hNextPowerOf2 -- Used so that sampling a 2x2 square of texels to downscale is fine
+	local n = 0
+	repeat
+		wNextPowerOf2 = 2 ^ n
+		n = n + 1
+	until wNextPowerOf2 >= w
+	local n = 0
+	repeat
+		hNextPowerOf2 = 2 ^ n
+		n = n + 1
+	until hNextPowerOf2 >= h
+	local highest = math.max(wNextPowerOf2, hNextPowerOf2)
+	wNextPowerOf2, hNextPowerOf2 = highest, highest
+	self.lightCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f"}) -- I have no idea what its units are. nits?
+	self.maxLuminanceCanvas = love.graphics.newCanvas(wNextPowerOf2, hNextPowerOf2, {format = "r32f", mipmaps = "manual"})
+	self.averageLuminanceCanvas = love.graphics.newCanvas(wNextPowerOf2, hNextPowerOf2, {format = "r32f", mipmaps = "manual"})
+	self.positionCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f"})
+	self.depthBuffer = love.graphics.newCanvas(w, h, {format = "depth32f"})
+	self.HUDCanvas = love.graphics.newCanvas(w, h)
 
+	-- Texture views
+	self.maxLuminanceCanvasViews = {}
+	for i = 1, self.maxLuminanceCanvas:getMipmapCount() do
+		self.maxLuminanceCanvasViews[i] = love.graphics.newTextureView(self.maxLuminanceCanvas, {
+			mipmapstart = i,
+			mipmapcount = 1,
+			debugname = "Max luminance canvas texture view " .. i
+		})
+	end
+	self.averageLuminanceCanvasViews = {}
+	for i = 1, self.averageLuminanceCanvas:getMipmapCount() do
+		self.averageLuminanceCanvasViews[i] = love.graphics.newTextureView(self.averageLuminanceCanvas, {
+			mipmapstart = i,
+			mipmapcount = 1,
+			debugname = "Average luminance canvas texture view " .. i
+		})
+	end
+
+	-- Images
 	self.dummyTexture = love.graphics.newImage(love.image.newImageData(1, 1))
 
+	-- Shaders
 	local lightsShaderCode =
 		"#line 1\n" ..
 		"const int maxLights = " .. consts.maxLightsCelestial .. ";\n" ..
@@ -43,8 +81,12 @@ function rendering:init()
 		lightsShaderCode ..
 		love.filesystem.read("shaders/atmosphere.glsl")
 	)
+	self.storeLuminanceShader = love.graphics.newShader("shaders/storeLuminance.glsl")
+	self.maxValueShader = love.graphics.newShader("shaders/maxValue.glsl")
+	self.averageValueShader = love.graphics.newShader("shaders/averageValue.glsl")
 
-	self.orbitLineMesh = util.generateCircleMesh(1024)
+	-- Meshes
+	self.orbitLineMesh = util.generateCircleMesh(1024) -- TEMP: Not enough for distant orbits
 	self.bodyMesh = assets.misc.meshes.icosphereSmooth
 end
 

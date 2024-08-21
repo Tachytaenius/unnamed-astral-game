@@ -3,6 +3,8 @@
 // Requires const int maxLights defined
 // Requires const int maxSpheres defined
 
+const float tau = 6.28318530718;
+
 struct ConvexRaycastResult {
 	bool hit;
 	float t1;
@@ -49,7 +51,7 @@ ConvexRaycastResult sphereRaycast2(vec3 spherePosition, float sphereRadius, vec3
 struct Light {
 	vec3 position;
 	vec3 colour;
-	float intensity;
+	float luminousFlux;
 };
 
 struct Sphere {
@@ -63,21 +65,21 @@ uniform Light[maxLights] lights;
 uniform int sphereCount;
 uniform Sphere[maxSpheres] spheres;
 
-uniform float maxBrightness;
-
 bool shadowCast(Light light, vec3 pointPosition) {
 	for (int j = 0; j < sphereCount; j++) {
 		Sphere sphere = spheres[j];
-		vec3 difference = pointPosition - light.position;
+		vec3 difference = light.position - pointPosition;
 		float dist = length(difference);
 		vec3 direction = difference / dist;
-		ConvexRaycastResult result = sphereRaycast2(sphere.position, sphere.radius, light.position, direction);
-		if (result.hit && 0.0 <= result.t1 && result.t1 <= dist) {
+		ConvexRaycastResult result = sphereRaycast2(sphere.position, sphere.radius, pointPosition, direction);
+		if (result.hit && 0.0 <= result.t1 && result.t1 <= dist) { // If the sun is sufficiently far away that float precision can't tell that a planet on the other side of the sun isn't creating a shadow, it might cast a shadow. But such faraway bodies shouldn't be part of the shadow spheres list
 			return true;
 		}
 	}
 	return false;
 }
+
+// NOTE: These are probably wrong, but radiometry/photometry is extremely hard to learn since the resources online don't answer my questions
 
 vec3 getLightAtPoint(vec3 pointPosition) {
 	vec3 ret = vec3(0.0);
@@ -87,8 +89,8 @@ vec3 getLightAtPoint(vec3 pointPosition) {
 			continue;
 		}
 		vec3 difference = pointPosition - light.position;
-		float brightness = light.intensity * 1.0 / dot(difference, difference); // Inverse square law
-		brightness = min(maxBrightness, brightness);
+		float luminousIntensity = light.luminousFlux / (2 * tau);
+		float brightness = luminousIntensity / dot(difference, difference); // Inverse square law
 		ret += brightness * light.colour;
 	}
 	return ret;
@@ -102,8 +104,8 @@ vec3 getLightAtPointNormal(vec3 pointPosition, vec3 pointNormal) {
 			continue;
 		}
 		vec3 difference = pointPosition - light.position;
-		float brightness = light.intensity * 1.0 / dot(difference, difference); // Inverse square law
-		brightness = min(maxBrightness, brightness);
+		float luminousIntensity = light.luminousFlux / (2 * tau);
+		float brightness = luminousIntensity / dot(difference, difference); // Inverse square law
 		brightness *= max(0.0, dot(-normalize(difference), pointNormal));
 		ret += brightness * light.colour;
 	}

@@ -1,4 +1,5 @@
 local mathsies = require("lib.mathsies")
+local vec2 = mathsies.vec2
 local vec3 = mathsies.vec3
 local quat = mathsies.quat
 local mat4 = mathsies.mat4
@@ -14,8 +15,11 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 
 	love.graphics.setMeshCullMode("none")
 
+	-- Get position offset
+	local positionOffset = -camera.absolutePosition -- Where needed, we make things relative to the camera so that precision issues go away (GPUs only use single-precision floats)
+
 	-- Get matrices
-	local worldToCamera = mat4.camera(camera.absolutePosition, camera.orientation)
+	local worldToCamera = mat4.camera(camera.absolutePosition + positionOffset, camera.orientation)
 	local cameraToClip = mat4.perspectiveLeftHanded(
 		outputCanvas:getWidth() / outputCanvas:getHeight(),
 		camera.verticalFOV,
@@ -28,10 +32,8 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 
 	-- Get and send lights
 	local lights = self:getLights()
-	self.bodyShader:send("maxBrightness", consts.maxLightBrightness)
-	self:sendLights(self.bodyShader, lights)
-	self.atmosphereShader:send("maxBrightness", consts.maxLightBrightness)
-	self:sendLights(self.atmosphereShader, lights)
+	self:sendLights(self.bodyShader, lights, positionOffset)
+	self:sendLights(self.atmosphereShader, lights, positionOffset)
 
 	-- Clear canvasses
 	love.graphics.setCanvas({
@@ -50,7 +52,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	love.graphics.setShader(self.bodyShader)
 	for _, body in ipairs(self.bodies) do
 		local modelToWorld = mat4.transform(
-			body.celestialMotionState.position,
+			body.celestialMotionState.position + positionOffset,
 			body.celestialOrientationState.value,
 			body.celestialRadius.value
 		)
@@ -60,7 +62,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		self.bodyShader:send("modelToClip", {mat4.components(modelToClip)})
 		self.bodyShader:send("modelToWorldNormal", {util.getNormalMatrix(modelToWorld)})
 		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, true)
-		self:sendShadowSpheres(self.bodyShader, shadowSpheres)
+		self:sendShadowSpheres(self.bodyShader, shadowSpheres, positionOffset)
 
 		love.graphics.draw(self.bodyMesh)
 	end
@@ -77,7 +79,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 			if orbit then
 				local semiMinorAxis = orbit.semiMajorAxis * math.sqrt(1 - orbit.eccentricity ^ 2)
 				local modelToWorld = mat4.transform(
-					util.getOrbitCentre(body),
+					util.getOrbitCentre(body) + positionOffset,
 					util.getOrbitalPlaneRotation(body) * quat.fromAxisAngle(consts.forwardVector * orbit.argumentOfPeriapsis),
 					vec3(orbit.semiMajorAxis, semiMinorAxis, 1)
 				)
@@ -99,31 +101,92 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	love.graphics.setShader(self.atmosphereShader)
 	self.atmosphereShader:send("positionCanvas", self.positionCanvas)
 	self.atmosphereShader:send("clipToSky", {mat4.components(clipToSky)})
-	self.atmosphereShader:send("cameraPosition", {vec3.components(camera.absolutePosition)})
+	self.atmosphereShader:send("cameraPosition", {vec3.components(camera.absolutePosition + positionOffset)})
 	self.atmosphereShader:send("rayStepCount", consts.atmosphereRayStepCount)
 	for _, body in ipairs(self.bodiesWithAtmospheres) do
 		local atmosphere = body.atmosphere
-		self.atmosphereShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position)})
+		self.atmosphereShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.atmosphereShader:send("bodyRadius", body.celestialRadius.value)
 		self.atmosphereShader:send("densityPower", atmosphere.densityPower)
-		self.atmosphereShader:send("atmosphereEmissiveness", math.min(consts.maxAtmosphereEmissiveness, atmosphere.emissiveness))
+		self.atmosphereShader:send("atmosphereLuminousFlux", atmosphere.atmosphereLuminousFlux)
+		-- TODO: Cap brightness
 		self.atmosphereShader:send("atmosphereRadius", body.celestialRadius.value + atmosphere.height)
 		self.atmosphereShader:send("atmosphereDensity", atmosphere.density)
 		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, false)
-		self:sendShadowSpheres(self.atmosphereShader, shadowSpheres)
+		self:sendShadowSpheres(self.atmosphereShader, shadowSpheres, positionOffset)
 		love.graphics.setColor(atmosphere.colour)
 		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
 	end
 	love.graphics.setBlendMode("alpha")
 	love.graphics.setColor(1, 1, 1)
 
-	-- Draw light canvas to output canvas with HDR
+	-- Draw HUD
+	love.graphics.setCanvas(self.HUDCanvas)
+	love.graphics.setShader()
+	love.graphics.clear()
+	if settings.graphics.drawBodyReticles then
+		love.graphics.setColor(consts.bodyReticleColour)
+		for _, body in ipairs(self.bodies) do
+			local position = body.celestialMotionState.position + positionOffset
+			local cameraSpacePosition = worldToCamera * position
+			if cameraSpacePosition.z > 0 then
+				local positionProjected = cameraToClip * cameraSpacePosition
+				local positionProjected2D = vec2(positionProjected.x, -positionProjected.y)
+				local screenSpacePos = (positionProjected2D * 0.5 + 0.5) * vec2(self.HUDCanvas:getDimensions())
+				love.graphics.circle("line", screenSpacePos.x, screenSpacePos.y, 10)
+			end
+		end
+		love.graphics.setColor(1, 1, 1)
+	end
+
+	-- Get log of luminance of lightCanvas into canvasses that use it
+	love.graphics.setShader(self.storeLuminanceShader)
+	love.graphics.setCanvas(self.maxLuminanceCanvas)
+	-- NOTE: Gamma-correct rendering causes the canvas to NOT have a value of -1, but it is negative, and we only check for negativity in the average luminance shader
+	love.graphics.clear(-1, 0, 0)
+	love.graphics.draw(self.lightCanvas)
+	love.graphics.setCanvas(self.averageLuminanceCanvas)
+	love.graphics.clear(-1, 0, 0)
+	-- Instead of using shader twice, use previous output
+	love.graphics.setShader()
+	love.graphics.draw(self.maxLuminanceCanvas)
+
+	-- Get maximum from the luminance texture
+	love.graphics.setShader(self.maxValueShader)
+	for i = 2, self.maxLuminanceCanvas:getMipmapCount() do
+		love.graphics.setCanvas(self.maxLuminanceCanvasViews[i])
+		self.maxValueShader:send("valueCanvas", self.maxLuminanceCanvasViews[i - 1])
+		self.maxValueShader:send("halfTexelSize", {
+			0.5 / self.maxLuminanceCanvas:getWidth(i - 1),
+			0.5 / self.maxLuminanceCanvas:getHeight(i - 1)
+		})
+		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.maxLuminanceCanvas:getDimensions(i))
+	end
+	-- Get average from the luminance texture
+	love.graphics.setShader(self.averageValueShader)
+	for i = 2, self.averageLuminanceCanvas:getMipmapCount() do
+		love.graphics.setCanvas(self.averageLuminanceCanvasViews[i])
+		self.averageValueShader:send("valueCanvas", self.averageLuminanceCanvasViews[i - 1])
+		self.averageValueShader:send("halfTexelSize", {
+			0.5 / self.averageLuminanceCanvas:getWidth(i - 1),
+			0.5 / self.averageLuminanceCanvas:getHeight(i - 1)
+		})
+		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.averageLuminanceCanvas:getDimensions(i))
+	end
+
+	-- Draw light canvas to output canvas with HDR, then draw HUD canvas as normal
 	love.graphics.setCanvas(outputCanvas)
 	love.graphics.clear()
+	print(self.averageLuminanceCanvas:newImageData(nil, self.averageLuminanceCanvas:getMipmapCount()):getPixel(0, 0))
+	print(self.maxLuminanceCanvas:newImageData(nil, self.maxLuminanceCanvas:getMipmapCount()):getPixel(0, 0))
+	print()
+	self.tonemappingShader:send("averageLuminanceCanvas", self.averageLuminanceCanvasViews[self.averageLuminanceCanvas:getMipmapCount()])
+	self.tonemappingShader:send("maxLuminanceCanvas", self.maxLuminanceCanvasViews[self.maxLuminanceCanvas:getMipmapCount()])
 	love.graphics.setShader(self.tonemappingShader)
-	love.graphics.draw(self.lightCanvas, 0, consts.canvasSystemHeight, 0, 1, -1)
-	love.graphics.setCanvas()
+	love.graphics.draw(self.lightCanvas)
 	love.graphics.setShader()
+	love.graphics.draw(self.HUDCanvas)
+	love.graphics.setCanvas()
 end
 
 function celestial:getLights()
@@ -132,7 +195,7 @@ function celestial:getLights()
 		lights[#lights + 1] = {
 			position = vec3.clone(star.celestialMotionState.position),
 			colour = util.shallowClone(star.starData.colour),
-			intensity = star.starData.luminosity
+			luminousFlux = star.starData.radiantFlux * star.starData.luminousEfficacy
 		}
 	end
 	return lights
@@ -146,7 +209,7 @@ function celestial:getShadowSpheres(body, ignoreCurrentBody)
 	local spheres = {}
 
 	local function addBody(bodyToAdd)
-		if ignoreCurrentBody and bodyToAdd == body then
+		if bodyToAdd.starData or ignoreCurrentBody and bodyToAdd == body then
 			return
 		end
 		spheres[#spheres + 1] = {
@@ -180,25 +243,25 @@ function celestial:getShadowSpheres(body, ignoreCurrentBody)
 	return spheres
 end
 
-function celestial:sendLights(shader, lights)
+function celestial:sendLights(shader, lights, offset)
 	assert(#lights <= consts.maxLightsCelestial, "Too many lights (" .. #lights .. "), should be no more than " .. consts.maxLightsCelestial)
 	shader:send("lightCount", #lights)
 	for i, light in ipairs(lights) do
 		local glslI = i - 1
 		local prefix = "lights[" .. glslI .. "]."
-		shader:send(prefix .. "position", {vec3.components(light.position)})
+		shader:send(prefix .. "position", {vec3.components(light.position + offset)})
 		shader:sendColor(prefix .. "colour", light.colour)
-		shader:send(prefix .. "intensity", light.intensity)
+		shader:send(prefix .. "luminousFlux", light.luminousFlux)
 	end
 end
 
-function celestial:sendShadowSpheres(shader, spheres)
+function celestial:sendShadowSpheres(shader, spheres, offset)
 	assert(#spheres <= consts.maxShadowSpheresCelestial, "Too many shadow spheres (" .. #spheres .. "), should be no more than " .. consts.maxShadowSpheresCelestial)
 	shader:send("sphereCount", #spheres)
 	for i, sphere in ipairs(spheres) do
 		local glslI = i - 1
 		local prefix = "spheres[" .. glslI .. "]."
-		shader:send(prefix .. "position", {vec3.components(sphere.position)})
+		shader:send(prefix .. "position", {vec3.components(sphere.position + offset)})
 		shader:send(prefix .. "radius", sphere.radius)
 	end
 end

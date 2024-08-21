@@ -2,7 +2,7 @@ local tau = math.pi * 2 -- TODO: Evaluate consts in order and allow reading cons
 
 local celestial = {}
 
-celestial.gravitationalConstant = 1
+celestial.gravitationalConstant = 6.6743e-5 and 1000 -- Mm^3 Rg^-1 s^2 (megametre, ronnagram, second)
 
 celestial.orbitNewtonRaphsonEpsilon = 0.001
 celestial.maxOrbitNewtonRaphsonIterations = 30

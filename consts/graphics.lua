@@ -20,12 +20,10 @@ graphics.lineVertexFormat = {
 	{"VertexColor", "float", 3}
 }
 
-graphics.celestialNearPlaneDistance = 0.01
-graphics.celestialFarPlaneDistance = 20000
+graphics.celestialNearPlaneDistance = 0.1
+graphics.celestialFarPlaneDistance = 20000000
 graphics.orbitLineColour = {0.25, 0.25, 0.25}
+graphics.bodyReticleColour = {0.5, 0.5, 0.5}
 graphics.atmosphereRayStepCount = 50
-graphics.maxSurfaceLuminosity = 10
-graphics.maxAtmosphereEmissiveness = 2
-graphics.maxLightBrightness = 4
 
 return graphics
