@@ -47,4 +47,6 @@ function love.draw()
 		(love.graphics.getWidth() - consts.canvasSystemWidth * settings.graphics.canvasScale) / 2,
 		(love.graphics.getHeight() - consts.canvasSystemHeight * settings.graphics.canvasScale) / 2
 	love.graphics.draw(outputCanvas, x, y, 0, settings.graphics.canvasScale)
+
+	love.graphics.print(love.timer.getFPS()) -- TEMP
 end

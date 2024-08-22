@@ -34,11 +34,11 @@ function rendering:init()
 	until hNextPowerOf2 >= h
 	local highest = math.max(wNextPowerOf2, hNextPowerOf2)
 	wNextPowerOf2, hNextPowerOf2 = highest, highest
-	self.lightCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f"})
-	self.atmosphereLightCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f"}) -- Separated and rejoined during tonemapping because of absolute colours being mixed into the light canvas
-	self.maxLuminanceCanvas = love.graphics.newCanvas(wNextPowerOf2, hNextPowerOf2, {format = "r32f", mipmaps = "manual"})
-	self.averageLuminanceCanvas = love.graphics.newCanvas(wNextPowerOf2, hNextPowerOf2, {format = "r32f", mipmaps = "manual"})
-	self.positionCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f"})
+	self.lightCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f", linear = true})
+	self.atmosphereLightCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f", linear = true}) -- Separated and rejoined during tonemapping because of absolute colours being mixed into the light canvas
+	self.maxLuminanceCanvas = love.graphics.newCanvas(wNextPowerOf2, hNextPowerOf2, {format = "r32f", mipmaps = "manual", linear = true})
+	self.averageLuminanceCanvas = love.graphics.newCanvas(wNextPowerOf2, hNextPowerOf2, {format = "r32f", mipmaps = "manual", linear = true})
+	self.positionCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f", linear = true})
 	self.depthBuffer = love.graphics.newCanvas(w, h, {format = "depth32f"})
 	self.HUDCanvas = love.graphics.newCanvas(w, h)
 
@@ -80,6 +80,7 @@ function rendering:init()
 	)
 	self.atmosphereShader = love.graphics.newShader(
 		lightsShaderCode ..
+		"#define FLIP_Y 1\n" .. love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/atmosphere.glsl")
 	)
 	self.storeLuminanceShader = love.graphics.newShader("shaders/storeLuminance.glsl")

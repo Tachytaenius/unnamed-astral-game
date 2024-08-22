@@ -66,7 +66,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 
 		-- self.bodyShader:send("modelToWorld", {mat4.components(modelToWorld)})
 		self.bodyShader:send("modelToClip", {mat4.components(modelToClip)})
-		-- self.bodyShader:send("modelToWorldNormal", {util.getNormalMatrix(modelToWorld)})
+		self.bodyShader:send("modelToWorldNormal", {util.getNormalMatrix(modelToWorld)})
 
 		-- Fix artifacting with raycasted spherical atmosphere interacting with icosphere body
 		-- self.bodyShader:send("spherise", true)
@@ -74,6 +74,10 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		self.bodyShader:send("cameraPosition", {vec3.components(camera.absolutePosition + positionOffset)})
 		self.bodyShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.bodyShader:send("bodyRadius", body.celestialRadius.value)
+
+		if body.albedoCubemap then -- TEMP
+			self.bodyShader:send("albedoTexture", body.albedoCubemap.value)
+		end
 
 		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, true)
 		self:sendShadowSpheres(self.bodyShader, shadowSpheres, positionOffset)

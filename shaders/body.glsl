@@ -54,8 +54,8 @@ void effect() {
 		// Planet is behind us
 		discard;
 	}
-	vec3 hitPosWorldSpace = cameraPosition + direction * min(raycastResult.t1, raycastResult.t2);
-	// vec3 raycastFragmentPositionModelSpace = (inverse(modelToWorld) * vec4(hitPosWorldSpace - bodyPosition, 1.0)).xyz; // Should be normalised (mathematically speaking)
+	vec3 hitPosWorldSpace = cameraPosition + direction * (raycastResult.t1 >= 0.0 ? raycastResult.t1 : raycastResult.t2);
+	// vec3 raycastFragmentPositionModelSpace = (inverse(modelToWorld) * vec4(hitPosWorldSpace - bodyPosition, 1.0)).xyz; // Should be normalised (mathematically speaking) because modelToWorld has radius as scale (NOTE: This is broken lol)
 	vec3 raycastFragmentNormal = normalize(hitPosWorldSpace - bodyPosition); // World space
 	vec3 raycastFragmentPosition = hitPosWorldSpace;
 
@@ -67,11 +67,12 @@ void effect() {
 
 	// vec3 fragmentNormal = normalize(modelToWorldNormal * fragmentPositionModelSpace);
 
-	vec3 albedo = Texel(albedoTexture, raycastFragmentNormal).rgb;
+	vec3 albedo = Texel(albedoTexture, normalize(modelToWorldNormal * raycastFragmentNormal)).rgb;
 	vec3 totalLight = getLightAtPointNormal(raycastFragmentPosition, raycastFragmentNormal);
 
 	love_Canvases[0] = vec4(albedo * totalLight, 1.0); // lightCanvas
 	love_Canvases[1] = vec4(raycastFragmentPosition, 1.0); // positionCanvas
+	// gl_FragDepth = // TODO: Make it smooth
 }
 
 #endif

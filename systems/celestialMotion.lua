@@ -91,7 +91,7 @@ function celestialMotion:update()
 	for _, entity in ipairs(self.rotates) do
 		local rotation = entity.celestialRotation
 		-- Tidal locking would be controlled here
-		local orientation = quat.fromAxisAngle(rotation.rotationAxis * (rotation.initialAngle + rotation.angularSpeed) * state.time)
+		local orientation = quat.fromAxisAngle(rotation.rotationAxis * (rotation.initialAngle + rotation.angularSpeed * state.time))
 		entity:give("celestialOrientationState", orientation)
 	end
 end

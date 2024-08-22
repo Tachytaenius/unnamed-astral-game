@@ -46,6 +46,7 @@ uniform sampler2D atmosphereLightCanvas;
 vec4 effect(vec4 colour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
 	float averageLuminance = Texel(averageLuminanceCanvas, vec2(0.5)).r;
 	float maxLuminance = Texel(maxLuminanceCanvas, vec2(0.5)).r;
+	maxLuminance = maxLuminance == 0.0 ? 1.0 : maxLuminance;
 
 	vec4 inSampleSolid = Texel(image, textureCoords);
 	vec4 inSampleAtmosphere = Texel(atmosphereLightCanvas, textureCoords);
