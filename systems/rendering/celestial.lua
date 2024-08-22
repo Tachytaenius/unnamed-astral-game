@@ -64,9 +64,17 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		)
 		local modelToClip = worldToClip * modelToWorld
 
-		self.bodyShader:send("modelToWorld", {mat4.components(modelToWorld)})
+		-- self.bodyShader:send("modelToWorld", {mat4.components(modelToWorld)})
 		self.bodyShader:send("modelToClip", {mat4.components(modelToClip)})
-		self.bodyShader:send("modelToWorldNormal", {util.getNormalMatrix(modelToWorld)})
+		-- self.bodyShader:send("modelToWorldNormal", {util.getNormalMatrix(modelToWorld)})
+
+		-- Fix artifacting with raycasted spherical atmosphere interacting with icosphere body
+		-- self.bodyShader:send("spherise", true)
+		self.bodyShader:send("clipToSky", {mat4.components(clipToSky)}) -- This one worked
+		self.bodyShader:send("cameraPosition", {vec3.components(camera.absolutePosition + positionOffset)})
+		self.bodyShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
+		self.bodyShader:send("bodyRadius", body.celestialRadius.value)
+
 		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, true)
 		self:sendShadowSpheres(self.bodyShader, shadowSpheres, positionOffset)
 
@@ -104,10 +112,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	end
 
 	-- Draw atmospheres to atmosphere light canvas, using position information but not writing to it
-	love.graphics.setCanvas({
-		self.atmosphereLightCanvas,
-		depthstencil = self.depthBuffer
-	})
+	love.graphics.setCanvas(self.atmosphereLightCanvas)
 	love.graphics.setDepthMode("always", false)
 	love.graphics.setBlendMode("add")
 	love.graphics.setShader(self.atmosphereShader)
@@ -186,6 +191,8 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		})
 		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.averageLuminanceCanvas:getDimensions(i))
 	end
+
+	-- print(self.maxLuminanceCanvas:newImageData(nil, self.maxLuminanceCanvas:getMipmapCount()):getPixel(0, 0))
 
 	-- Draw light canvas to output canvas with HDR, then draw HUD canvas as normal
 	love.graphics.setCanvas(outputCanvas)
