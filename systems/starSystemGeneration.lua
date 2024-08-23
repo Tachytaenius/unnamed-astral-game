@@ -1,7 +1,6 @@
 local mathsies = require("lib.mathsies")
 local vec3 = mathsies.vec3
 local quat = mathsies.quat
-local mat4 = mathsies.mat4
 local concord = require("lib.concord")
 
 local consts = require("consts")
@@ -97,29 +96,6 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 					util.randomRange(0.5, 2)
 				)
 			end
-			
-			local cameraToClip = mat4.perspectiveLeftHanded(
-				1,
-				consts.tau * 0.25,
-				thisRadius * 1.5, -- 1.5,
-				thisRadius * 0.5 -- 0.5
-			)
-			local bodyBaseShader = graphicsObjects.bodyBaseShader
-			local function drawFunction(orientation)
-				local worldToCameraStationary = mat4.camera(vec3(), orientation)
-				local clipToSky = mat4.inverse(cameraToClip * worldToCameraStationary)
-				love.graphics.clear(0.25, 0.4, 0.95)
-				-- All graphics changes get popped
-				love.graphics.setShader(bodyBaseShader)
-				bodyBaseShader:send("noiseFrequency", 4)
-				bodyBaseShader:send("noiseEffect", 0.5)
-				bodyBaseShader:send("colourMixNoiseFrequency", 1.0)
-				bodyBaseShader:sendColor("primaryColour", {0.75, 0.5, 0.3})
-				bodyBaseShader:sendColor("secondaryColour", {0.8, 0.2, 0})
-				bodyBaseShader:send("clipToSky", {mat4.components(clipToSky)})
-				love.graphics.draw(graphicsObjects.dummyTexture, 0, 0, 0, love.graphics.getCanvas():getDimensions())
-			end
-			body:give("albedoCubemap", util.generateCubemap(256, nil, drawFunction))
 		end
 
 		-- TODO: Tidal locking (only if has parent)
@@ -129,6 +105,10 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		local surfaceSpeed = util.randomRange(0.5, 1)
 		local angularSpeed = surfaceSpeed / body.celestialRadius.value
 		body:give("celestialRotation", rotationAxis, initialAngle, angularSpeed)
+
+		local seed = love.math.random(0, 2 ^ 32 - 1)
+		local drawFunction = util.getAlbedoCubemapDrawFunction(body, seed, graphicsObjects)
+		body:give("albedoCubemap", seed, util.generateCubemap(256, nil, drawFunction))
 
 		state.ecs:addEntity(body)
 		if depth < 2 then
@@ -144,11 +124,16 @@ end
 function starSystemGeneration:init()
 	self.graphicsObjects = {}
 	self.graphicsObjects.dummyTexture = love.graphics.newImage(love.image.newImageData(1, 1))
-	self.graphicsObjects.bodyBaseShader = love.graphics.newShader(
+	self.graphicsObjects.baseColoursShader = love.graphics.newShader(
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/include/colourSpaceConversion.glsl") ..
-		love.filesystem.read("shaders/bodyAlbedoBase.glsl")
+		love.filesystem.read("shaders/albedoGeneration/baseColours.glsl")
+	)
+	self.graphicsObjects.noiseShader = love.graphics.newShader(
+		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
+		love.filesystem.read("shaders/include/skyDirection.glsl") ..
+		love.filesystem.read("shaders/albedoGeneration/noise.glsl")
 	)
 end
 
