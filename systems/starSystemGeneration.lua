@@ -8,6 +8,35 @@ local util = require("util")
 
 local starSystemGeneration = concord.system()
 
+-- https://www.desmos.com/calculator/spkmau6z7n
+
+local function baseLineCurve(x)
+	return
+		x < 0.5 and 0 or
+		x > 0.5 and 1 or
+		math.sin(consts.tau * x / 2) * 0.5 + 0.5
+end
+
+local function transformedCurve(x, peak, transition, width, base)
+	local baseOut = baseLineCurve((x - transition) / width)
+	return peak * (baseOut * (1 - base / peak) + base / peak)
+end
+
+local function planetProbabilityWeightCurve(
+	x, peak,
+	transitionLeft, widthLeft, baseLeft,
+	transitionRight, widthRight, baseRight
+)
+	-- TODO: Error for values producing discontinuities in the function. Or blend between them, which should be made such that for piecewise baseLineCurve functions that hit 1 it makes no difference. The piecewise joining point between the two functions is in the if statement below, which is where the discontinuity would happen
+	if x < transitionLeft + widthLeft / 2 then
+		-- Left side
+		return transformedCurve(x, peak, transitionLeft, widthLeft, baseLeft)
+	else
+		-- Right side (fliped around its transition point)
+		return transformedCurve(2 * transitionRight - x, peak, transitionRight, widthRight, baseRight)
+	end
+end
+
 local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObjects)
 	local numBodies
 	if not parent then
@@ -24,12 +53,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 
 	for i = 1, numBodies do
 		local body = concord.entity()
-		local bodyType =
-			depth == 0 and "star" or
-			depth == 1 and "planet" or
-			depth == 2 and "moon"
-		body:give("celestialBody", bodyType)
-		body:give("satellites")
+		local bodyType
 
 		if not parent then
 			assert(depth == 0, "Can't have star system depth without parent")
@@ -55,6 +79,23 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 			)
 		end
 
+		if depth == 0 then
+			bodyType = "star"
+		elseif depth == 1 then
+			local x = body.keplerOrbit.semiMajorAxis -- Should be average distance from star over time, really, but the orbits aren't very eccentric
+			bodyType = util.weightedRandomChoice({
+				{value = "rocky", weight = 1 or planetProbabilityWeightCurve( -- remember to remove the "1 or" when fixing this
+					x, 10
+				)},
+				-- {value = "icy", weight = },
+				-- {value = "gaseous", weight = }
+			})
+		else
+			-- error("Not implemented")
+			bodyType = "rocky"
+		end
+		body:give("celestialBody", bodyType)
+
 		if bodyType == "star" then
 			local mass = util.randomRange(1500000, 2500000)
 			local density = util.randomRange(0.001, 0.002)
@@ -76,9 +117,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 			-- 	luminousFlux * util.randomRange(0.25, 0.5),
 			-- 	util.randomRange(0.5, 2)
 			-- )
-		elseif bodyType == "planet" or bodyType == "moon" then
-			-- TEMP: Assume all rocky planets. TODO: Add gas giants
-			assert(parent, "Can't have planet/moon without parent")
+		elseif bodyType == "rocky" then
 			local parentVolume = 2 / 3 * consts.tau * parent.celestialRadius.value ^ 3
 			local parentDensity = parent.celestialMass.value / parentVolume
 			local thisMass = parent.celestialMass.value * 10 ^ util.randomRange(-7.5, -4.5)
@@ -96,6 +135,10 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 					util.randomRange(0.5, 2)
 				)
 			end
+		elseif bodyType == "icy" then
+			
+		elseif bodyType == "gaseous" then
+			
 		end
 
 		-- TODO: Tidal locking (only if has parent)
@@ -110,6 +153,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		local drawFunction = util.getAlbedoCubemapDrawFunction(body, seed, graphicsObjects)
 		body:give("albedoCubemap", seed, util.generateCubemap(256, nil, drawFunction))
 
+		body:give("satellites")
 		state.ecs:addEntity(body)
 		if depth < 2 then
 			local newCurveInfo = {

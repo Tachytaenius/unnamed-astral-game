@@ -17,6 +17,9 @@ vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoo
 	switch (noiseType) {
 		// case 0 is default
 		case 1:
+			filteredNoise = abs(noiseIn - 0.5) * 2.0;
+			break;
+		case 2:
 			filteredNoise = 1.0 - abs(noiseIn - 0.5) * 2.0;
 			break;
 		default:

@@ -5,6 +5,8 @@ local mat4 = mathsies.mat4
 
 local consts = require("consts")
 
+local highestNoiseType = 2
+
 return function(body, seed, graphicsObjects)
 	local randomGenerator = love.math.newRandomGenerator(seed)
 	local randomStartState = randomGenerator:getState() -- Must have state reset at start of drawFunction to ensure random values don't vary across cubemap faces
@@ -14,7 +16,7 @@ return function(body, seed, graphicsObjects)
 		body.celestialRadius.value * 1.5, -- 1.5,
 		body.celestialRadius.value * 0.5 -- 0.5
 	)
-	if body.celestialBody.type == "planet" then -- TEMP: Assume all rocky planets. TODO: Add gas giants
+	if body.celestialBody.type == "rocky" or body.celestialBody.type == "icy" then
 		return function(orientation)
 			randomGenerator:setState(randomStartState)
 			local function drawDummy()
@@ -43,7 +45,7 @@ return function(body, seed, graphicsObjects)
 			love.graphics.setShader(noiseShader)
 			noiseShader:send("noiseFrequency", 4)
 			noiseShader:send("noiseEffect", 0.5)
-			noiseShader:send("noiseType", randomGenerator:random(0, 1))
+			noiseShader:send("noiseType", randomGenerator:random(0, highestNoiseType))
 			sendSky()
 			love.graphics.setBlendMode("multiply", "premultiplied")
 			drawDummy()
