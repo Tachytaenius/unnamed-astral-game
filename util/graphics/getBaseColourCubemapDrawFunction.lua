@@ -32,10 +32,10 @@ return function(body, seed, graphicsObjects)
 			-- All graphics changes get popped
 
 			-- Get base colour
-			love.graphics.setShader(gfx.baseColoursShader)
-			gfx.baseColoursShader:send("colourMixNoiseFrequency", 1.0)
-			gfx.baseColoursShader:sendColor("primaryColour", {0.75, 0.5, 0.3})
-			gfx.baseColoursShader:sendColor("secondaryColour", {0.8, 0.2, 0})
+			love.graphics.setShader(gfx.baseShader)
+			gfx.baseShader:send("colourMixNoiseFrequency", 1.0)
+			gfx.baseShader:sendColor("primaryColour", {0.75, 0.5, 0.3})
+			gfx.baseShader:sendColor("secondaryColour", {0.8, 0.2, 0})
 			sendSky()
 			love.graphics.setBlendMode("alpha")
 			drawDummy()

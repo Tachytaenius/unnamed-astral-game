@@ -152,8 +152,8 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		body:give("celestialRotation", rotationAxis, initialAngle, angularSpeed)
 
 		local seed = love.math.random(0, 2 ^ 32 - 1)
-		local drawFunction = util.getAlbedoCubemapDrawFunction(body, seed, graphicsObjects)
-		body:give("albedoCubemap", seed, util.generateCubemap(256, nil, drawFunction))
+		local drawFunction = util.getBaseColourCubemapDrawFunction(body, seed, graphicsObjects)
+		body:give("baseColourCubemap", seed, util.generateCubemap(256, nil, drawFunction))
 
 		body:give("satellites")
 		state.ecs:addEntity(body)
@@ -170,16 +170,16 @@ end
 function starSystemGeneration:init()
 	self.graphicsObjects = {}
 	self.graphicsObjects.dummyTexture = love.graphics.newImage(love.image.newImageData(1, 1))
-	self.graphicsObjects.baseColoursShader = love.graphics.newShader(
+	self.graphicsObjects.baseShader = love.graphics.newShader(
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/include/colourSpaceConversion.glsl") ..
-		love.filesystem.read("shaders/albedoGeneration/baseColours.glsl")
+		love.filesystem.read("shaders/baseColourGeneration/base.glsl")
 	)
 	self.graphicsObjects.noiseShader = love.graphics.newShader(
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
-		love.filesystem.read("shaders/albedoGeneration/noise.glsl")
+		love.filesystem.read("shaders/baseColourGeneration/noise.glsl")
 	)
 end
 

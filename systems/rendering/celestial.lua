@@ -75,8 +75,8 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		self.bodyShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.bodyShader:send("bodyRadius", body.celestialRadius.value)
 
-		if body.albedoCubemap then -- TEMP
-			self.bodyShader:send("albedoTexture", body.albedoCubemap.value)
+		if body.baseColourCubemap then -- TEMP
+			self.bodyShader:send("baseColourTexture", body.baseColourCubemap.value)
 		end
 
 		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, true)

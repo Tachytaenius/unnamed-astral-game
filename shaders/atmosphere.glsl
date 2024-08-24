@@ -62,9 +62,10 @@ vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoo
 			clamp(1.0 - altitude / (atmosphereRadius - bodyRadius), 0.0, 1.0),
 			densityPower
 		);
-		vec3 sampleAlbedo = loveColour.rgb * atmosphereDensity * densityMultiplier;
+		// TODO: Work out units here and just reorganise this a bit
+		vec3 sampleBaseColour = loveColour.rgb * atmosphereDensity * densityMultiplier;
 		vec3 incomingLight = getLightAtPoint(samplePosition);
-		vec3 sample = sampleAlbedo * (incomingLight + atmosphereEmissiveness);
+		vec3 sample = sampleBaseColour * (incomingLight + atmosphereEmissiveness);
 		outColour += sample * stepSize;
 	}
 
