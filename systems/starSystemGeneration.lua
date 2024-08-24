@@ -82,34 +82,34 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		if depth == 0 then
 			bodyType = "star"
 		elseif depth == 1 then
-			local x = body.keplerOrbit.semiMajorAxis -- Should be average distance from star over time, really, but the orbits aren't very eccentric
-			bodyType = util.weightedRandomChoice({
-				{value = "rocky", weight = 1 or planetProbabilityWeightCurve( -- remember to remove the "1 or" when fixing this
-					x, 10
-				)},
-				-- {value = "icy", weight = },
-				-- {value = "gaseous", weight = }
-			})
+			local distance = body.keplerOrbit.semiMajorAxis -- Should be average distance from star over time, really, but the orbits aren't very eccentric
+			local function saturate(x) return math.max(0, math.min(1, x)) end
+			-- bodyType = util.weightedRandomChoice({
+			-- 	{value = "rocky", weight = saturate(1 - distance / 4e10)},
+			-- 	{value = "gaseous", weight = }
+			-- })
+			local gaseousChance = saturate((distance - 6e11) / 1e12) * 0.8
+			bodyType = love.math.random() < gaseousChance and "gaseous" or "rocky"
 		else
-			-- error("Not implemented")
 			bodyType = "rocky"
 		end
 		body:give("celestialBody", bodyType)
 
+		local parentVolume = parent and 2 / 3 * consts.tau * parent.celestialRadius.value ^ 3
+		local parentDensity = parent and parent.celestialMass.value / parentVolume
+		local mass, radius
 		if bodyType == "star" then
-			local mass = util.randomRange(1500000, 2500000)
-			local density = util.randomRange(0.001, 0.002)
+			mass = util.randomRange(1.5e30, 2.5e30)
+			local density = util.randomRange(1200, 1600)
 			local volume = mass / density
-			local radius = (volume / (2 / 3 * consts.tau)) ^ (1 / 3)
-			local radiantFlux = mass ^ 4 * 26 -- AKA luminosity. In watts. The multiplier is in watts per ronnagrams to the fourth. Apparently luminosity/radiant flux of a star is proportional to the mass to the 4th (ish. I'm pretending it's more exact)
-			-- Solar mass is 1980000 Rg, put it through the equation and you get a radiant flux of approximately 4*10^26 W, which is approximately that of the sun
+			radius = (volume / (2 / 3 * consts.tau)) ^ (1 / 3)
+			local radiantFlux = mass ^ 4 * 2.451e-95 -- AKA luminosity. In watts. The multiplier is in watts per kilograms to the fourth. Apparently luminosity/radiant flux of a star is proportional to the mass to the 4th (ish. I'm pretending it's more exact)
+			-- Solar mass is 1.988 * 10^30 kg, put it through the equation and you get a radiant flux of approximately 4*10^26 W, which is approximately that of the sun
 			local luminousEfficacy = util.randomRange(90, 100) -- In lumens per Watt
 			local luminousFlux = radiantFlux * luminousEfficacy -- In lumens. Visible equivalent to radiant flux. The luminous efficacy, if at the sun's 93 lumens per Watt, would take a radiant flux of the sun to a luminous flux of the sun (which is around 3.62 * 10^28 lumens, apparently)
 			-- So: inputting the sun's mass and luminous efficacy gets you the sun's luminous flux. Which is what we want.
 			local colour = {1, 1, 1}
 			body:give("starData", radiantFlux, luminousEfficacy, colour)
-			body:give("celestialMass", mass)
-			body:give("celestialRadius", radius)
 			-- body:give("atmosphere",
 			-- 	radius * util.randomRange(1.2, 1.4),
 			-- 	{1, 1, 1},
@@ -118,34 +118,36 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 			-- 	util.randomRange(0.5, 2)
 			-- )
 		elseif bodyType == "rocky" then
-			local parentVolume = 2 / 3 * consts.tau * parent.celestialRadius.value ^ 3
-			local parentDensity = parent.celestialMass.value / parentVolume
-			local thisMass = parent.celestialMass.value * 10 ^ util.randomRange(-7.5, -4.5)
-			local thisDensity = parentDensity * util.randomRange(0.75, 1.25) * (parent.starData and util.randomRange(3.5, 4.5) or 1)
-			local thisVolume = thisMass / thisDensity
-			local thisRadius = (thisVolume / (2 / 3 * consts.tau)) ^ (1 / 3)
-			body:give("celestialMass", thisMass)
-			body:give("celestialRadius", thisRadius)
+			mass = parent.celestialMass.value * 10 ^ util.randomRange(-7.5, -4.5)
+			local thisDensity = parentDensity * util.randomRange(0.75, 1.25) * (
+				depth == 1 and util.randomRange(3.5, 4.5)
+				or 1
+			)
+			local thisVolume = mass / thisDensity
+			radius = (thisVolume / (2 / 3 * consts.tau)) ^ (1 / 3)
 			if love.math.random() < 0 then -- TEMP atmosphere disabled
 				body:give("atmosphere",
-					thisRadius * util.randomRange(0.001, 0.05),
+					radius * util.randomRange(0.001, 0.05),
 					{1, 1, 1},
 					util.randomRange(3, 5),
 					0,
 					util.randomRange(0.5, 2)
 				)
 			end
-		elseif bodyType == "icy" then
-			
 		elseif bodyType == "gaseous" then
-			
+			mass = parent.celestialMass.value * 10 ^ util.randomRange(-4.5, -3)
+			local thisDensity = parentDensity * util.randomRange(0.75, 1.25) 
+			local thisVolume = mass / thisDensity
+			radius = (thisVolume / (2 / 3 * consts.tau)) ^ (1 / 3)
 		end
+		body:give("celestialMass", mass)
+		body:give("celestialRadius", radius)
 
 		-- TODO: Tidal locking (only if has parent)
 		local rotationAxisRotation = quat.fromAxisAngle(util.randomInSphereVolume(consts.tau * 0.1)) -- Used to perturb rotation axis off forward vector
 		local rotationAxis = vec3.rotate(consts.forwardVector, rotationAxisRotation)
 		local initialAngle = love.math.random() * consts.tau
-		local surfaceSpeed = util.randomRange(0.5, 1)
+		local surfaceSpeed = util.randomRange(0.5, 1) -- TODO
 		local angularSpeed = surfaceSpeed / body.celestialRadius.value
 		body:give("celestialRotation", rotationAxis, initialAngle, angularSpeed)
 

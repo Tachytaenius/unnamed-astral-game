@@ -16,7 +16,7 @@ return function(body, seed, graphicsObjects)
 		body.celestialRadius.value * 1.5, -- 1.5,
 		body.celestialRadius.value * 0.5 -- 0.5
 	)
-	if body.celestialBody.type == "rocky" or body.celestialBody.type == "icy" then
+	if body.celestialBody.type == "rocky" then
 		return function(orientation)
 			randomGenerator:setState(randomStartState)
 			local function drawDummy()

@@ -22,8 +22,8 @@ graphics.lineVertexFormat = {
 	{"VertexColor", "float", 3}
 }
 
-graphics.celestialNearPlaneDistance = 0.1
-graphics.celestialFarPlaneDistance = 20000000
+graphics.celestialNearPlaneDistance = 2e5 -- One order of magnitude below megametres
+graphics.celestialFarPlaneDistance = 2e13
 graphics.orbitLineColour = {0.25, 0.25, 0.25}
 graphics.bodyReticleColour = {0.5, 0.5, 0.5}
 graphics.atmosphereRayStepCount = 50

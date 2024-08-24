@@ -130,7 +130,6 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		self.atmosphereShader:send("bodyRadius", body.celestialRadius.value)
 		self.atmosphereShader:send("densityPower", atmosphere.densityPower)
 		self.atmosphereShader:send("atmosphereEmissiveness", atmosphere.luminousFlux) -- I don't know anymore :( I'd rather just do it as art than science yk
-		-- TODO: Cap brightness
 		self.atmosphereShader:send("atmosphereRadius", body.celestialRadius.value + atmosphere.height)
 		self.atmosphereShader:send("atmosphereDensity", atmosphere.density)
 		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, false)
