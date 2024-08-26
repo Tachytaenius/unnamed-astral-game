@@ -125,6 +125,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 			)
 			local thisVolume = mass / thisDensity
 			radius = (thisVolume / (2 / 3 * consts.tau)) ^ (1 / 3)
+
 			if love.math.random() < 0 then -- TEMP atmosphere disabled
 				body:give("atmosphere",
 					radius * util.randomRange(0.001, 0.05),
@@ -134,11 +135,32 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 					util.randomRange(0.5, 2)
 				)
 			end
+
+			-- Oceanic worlds should have different sets of features
+			local primaryColour = {love.math.random(), love.math.random(), love.math.random()} -- TEMP
+			local secondaryColour = {love.math.random(), love.math.random(), love.math.random()} -- TEMP, base it on primaryColour
+			local features = {}
+			for featureIndex = 1, love.math.random(0, 50) do
+				local feature = {}
+				-- feature.type = love.math.random() < 0.25 and "ravine" or "crater"
+				feature.type = "ravine"
+				if feature.type == "ravine" then
+					feature.startPoint = util.randomOnSphereSurface(1)
+					feature.rotationToEnd = util.randomOnSphereSurface(util.randomRange(consts.tau * 0.1, consts.tau * 0.5))
+					feature.width = radius * util.randomRange(0.0000001, 0.00001)
+					feature.depth = radius * util.randomRange(0.00001, 0.001)
+				end
+				features[featureIndex] = feature
+			end
+			body:give("celestialBodySurface", {primaryColour, secondaryColour}, features)
 		elseif bodyType == "gaseous" then
 			mass = parent.celestialMass.value * 10 ^ util.randomRange(-4.5, -3)
 			local thisDensity = parentDensity * util.randomRange(0.75, 1.25) 
 			local thisVolume = mass / thisDensity
 			radius = (thisVolume / (2 / 3 * consts.tau)) ^ (1 / 3)
+		end
+		if not body.celestialBodySurface then
+			body:give("celestialBodySurface", {{1, 1, 1}, {0.5, 0.5, 0.5}}, {}) -- TEMP
 		end
 		body:give("celestialMass", mass)
 		body:give("celestialRadius", radius)
@@ -181,6 +203,16 @@ function starSystemGeneration:init()
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/baseColourGeneration/noise.glsl")
 	)
+
+	self.graphicsObjects.surfaceFeatureMeshes = {}
+	
+	local surfaceFeatureShaders = {}
+	surfaceFeatureShaders.ravine = love.graphics.newShader(
+		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
+		love.filesystem.read("shaders/include/skyDirection.glsl") ..
+		love.filesystem.read("shaders/baseColourGeneration/ravine.glsl")
+	)
+	self.graphicsObjects.surfaceFeatureShaders = surfaceFeatureShaders
 end
 
 function starSystemGeneration:newWorld()
