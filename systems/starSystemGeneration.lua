@@ -48,7 +48,6 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		local distanceLimitingFactor = depth > 1 and math.min(math.max(ownI - start, 0) / length, 1) or 1 -- Limit number of children based on proximity to parent
 		local maxBodies = math.floor(distanceLimitingFactor * 12 / depth ^ 1.25)
 		numBodies = love.math.random(0, maxBodies)
-		numBodies = maxBodies -- TEMP
 	end
 
 	for i = 1, numBodies do
@@ -146,9 +145,15 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 				feature.type = "ravine"
 				if feature.type == "ravine" then
 					feature.startPoint = util.randomOnSphereSurface(1)
-					feature.rotationToEnd = util.randomOnSphereSurface(util.randomRange(consts.tau * 0.1, consts.tau * 0.5))
-					feature.width = radius * util.randomRange(0.0000001, 0.00001)
+					local rotationToEnd = util.randomOnSphereSurface(util.randomRange(consts.tau * 0.1, consts.tau * 0.4)) -- Not uniformly distributed but whatever
+					feature.endPoint = vec3.rotate(feature.startPoint, quat.fromAxisAngle(rotationToEnd))
+					feature.angularWidth = util.randomRange(consts.tau * 0.001, consts.tau * 0.005)
 					feature.depth = radius * util.randomRange(0.00001, 0.001)
+					feature.baseColour = {}
+					for i = 1, 3 do
+						feature.baseColour[i] = primaryColour[i] * util.randomRange(0.25, 0.5)
+					end
+					feature.edgeFadeAngularLength = feature.angularWidth * util.randomRange(0.2, 1.5)
 				end
 				features[featureIndex] = feature
 			end
@@ -175,7 +180,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 
 		local seed = love.math.random(0, 2 ^ 32 - 1)
 		local drawFunction = util.getBaseColourCubemapDrawFunction(body, seed, graphicsObjects)
-		body:give("baseColourCubemap", seed, util.generateCubemap(256, nil, drawFunction))
+		body:give("baseColourCubemap", seed, util.generateCubemap(512, nil, drawFunction))
 
 		body:give("satellites")
 		state.ecs:addEntity(body)

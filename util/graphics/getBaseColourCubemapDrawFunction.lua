@@ -33,10 +33,16 @@ return function(body, seed, graphicsObjects)
 		model.shader = gfx.surfaceFeatureShaders[feature.type]
 		if feature.type == "ravine" then
 			function model:graphicsSetup()
-				-- model.shader:send("ravineWidth", feature.width)
-				-- model.shader:send(TODO) -- Depth should be encoded by colour or something
+				model.shader:send("ravineWidth", feature.angularWidth)
 				model.shader:send("ravineStart", {vec3.components(feature.startPoint)})
-				-- model.shader:send("ravineRotation", feature.rotationToEnd)
+				model.shader:send("ravineEnd", {vec3.components(feature.endPoint)})
+				model.shader:send("ravineColour", feature.baseColour)
+				model.shader:send("ravineAlphaMultiplier",
+					math.min(4, 
+						(feature.depth / (feature.angularWidth * body.celestialRadius.value)) ^ (1/3.5)
+					)
+				)
+				model.shader:send("ravineOutlineFadeAngularLength", feature.edgeFadeAngularLength)
 			end
 		end
 		surfaceFeatureModels[#surfaceFeatureModels + 1] = model
