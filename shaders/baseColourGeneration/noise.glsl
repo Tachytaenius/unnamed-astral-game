@@ -26,7 +26,10 @@ vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoo
 			filteredNoise = noiseIn;
 	}
 
-	float outNoise = 1.0 - filteredNoise * noiseEffect;
+	float blank = 0.0;
+	float mixingNoise = pow(max(0.0, snoise(direction * 3.0 + 200.0) * 0.5 + 0.5), 1.0);
+	float mixedNoise = mix(blank, filteredNoise, mixingNoise);
+	float outNoise = 1.0 - mixedNoise * noiseEffect;
 	return vec4(vec3(outNoise), 1.0);
 }
 

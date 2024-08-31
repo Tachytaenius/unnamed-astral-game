@@ -7,7 +7,7 @@ local consts = require("consts")
 
 local highestNoiseType = 2
 
-return function(body, seed, graphicsObjects)
+return function(body, seed, graphicsObjects, cubemapSideSize)
 	local randomGenerator = love.math.newRandomGenerator(seed)
 	local randomStartState = randomGenerator:getState() -- Must have state reset at start of drawFunction to ensure random values don't vary across cubemap faces
 	local cameraToClip = mat4.perspectiveLeftHanded(
@@ -17,6 +17,7 @@ return function(body, seed, graphicsObjects)
 		body.celestialRadius.value * 0.5 -- 0.5
 	)
 	local gfx = graphicsObjects
+	local setAlphaCanvas = love.graphics.newCanvas(cubemapSideSize, cubemapSideSize, {format = "r8", linear = true})
 
 	local function drawDummy()
 		love.graphics.draw(graphicsObjects.dummyTexture, 0, 0, 0, love.graphics.getCanvas():getDimensions())
@@ -25,48 +26,51 @@ return function(body, seed, graphicsObjects)
 		love.graphics.getShader():send("clipToSky", {mat4.components(clipToSky)})
 	end
 
-	local surfaceFeatureModels = {}
-	for _, feature in ipairs(body.celestialBodySurface.features) do
-		local model = {}
-		model.feature = feature
-		model.mesh = gfx.surfaceFeatureMeshes[feature.type] -- If nil, it's drawn using screen direction
-		model.shader = gfx.surfaceFeatureShaders[feature.type]
-		if feature.type == "ravine" then
-			function model:graphicsSetup()
-				model.shader:send("ravineWidth", feature.angularWidth)
-				model.shader:send("ravineStart", {vec3.components(feature.startPoint)})
-				model.shader:send("ravineEnd", {vec3.components(feature.endPoint)})
-				model.shader:send("ravineColour", feature.baseColour)
-				model.shader:send("ravineAlphaMultiplier",
-					math.min(4, 
-						(feature.depth / (feature.angularWidth * body.celestialRadius.value)) ^ (1/3.5)
-					)
-				)
-				model.shader:send("ravineOutlineFadeAngularLength", feature.edgeFadeAngularLength)
+	local function drawSurfaceFeatures(worldToClip, clipToSky)
+		local function drawFeature(feature, drawingToAlpha)
+			if feature.type == "streak" then
+				local shader = gfx.surfaceFeatureShaders.streak
+				love.graphics.setShader(shader)
+				shader:send("angularWidth", feature.angularWidth)
+				shader:send("startPoint", {vec3.components(feature.startPoint)})
+				shader:send("endPoint", {vec3.components(feature.endPoint)})
+				shader:send("alphaMultiplier", feature.alphaMultiplier)
+				shader:send("edgeFadeAngularLength", feature.edgeFadeAngularLength)
+				shader:send("outputAlpha", drawingToAlpha)
+				shader:send("clipToSky", {mat4.components(clipToSky)})
+				drawDummy()
+			elseif feature.type == "patch" then
+				local shader = gfx.surfaceFeatureShaders.patch
+				love.graphics.setShader(shader)
+				shader:send("location", {vec3.components(feature.location)})
+				shader:send("angularRadius", feature.angularRadius)
+				shader:send("noisiness", feature.noisiness)
+				shader:send("alphaMultiplier", feature.alphaMultiplier)
+				shader:send("edgeFadeAngularLength", feature.edgeFadeAngularLength)
+				shader:send("outputAlpha", drawingToAlpha)
+				shader:send("clipToSky", {mat4.components(clipToSky)})
+				drawDummy()
 			end
 		end
-		surfaceFeatureModels[#surfaceFeatureModels + 1] = model
-	end
 
-	local function drawSurfaceFeatures(worldToClip, clipToSky)
-		for _, model in ipairs(surfaceFeatureModels) do
-			love.graphics.setShader(model.shader)
-			if model.shader:hasUniform("modelToClip") then
-				local modelToClip = worldToClip * model.modelToWorld
-				model.shader:send("modelToClip", {mat4.components(modelToClip)})
-			end
-			if model.shader:hasUniform("clipToSky") then
-				model.shader:send("clipToSky", {mat4.components(clipToSky)})
-			end
-			love.graphics.push("all")
-			if model.graphicsSetup then
-				model:graphicsSetup()
-			end
-			love.graphics.pop()
-			if model.mesh then
-				love.graphics.draw(model.mesh)
+		for _, feature in ipairs(body.celestialBodySurface.features) do
+			if feature.isSet then
+				love.graphics.push("all")
+				love.graphics.setCanvas(setAlphaCanvas)
+				love.graphics.clear()
+				love.graphics.setBlendMode("lighten", "premultiplied")
+				for _, subFeature in ipairs(feature) do
+					drawFeature(subFeature, true)
+				end
+				love.graphics.pop()
+
+				love.graphics.setShader(gfx.featureSetShader)
+				-- gfx.featureSetShader:send("clipToSky", {mat4.components(clipToSky)})
+				love.graphics.setColor(feature.baseColour)
+				love.graphics.draw(setAlphaCanvas)
+				love.graphics.setColor(1, 1, 1)
 			else
-				drawDummy()
+				drawFeature(feature, false)
 			end
 		end
 	end

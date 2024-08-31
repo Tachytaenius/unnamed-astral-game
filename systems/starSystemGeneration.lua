@@ -135,28 +135,50 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 				)
 			end
 
-			-- Oceanic worlds should have different sets of features
+			-- Oceanic worlds should have different sets of features (or perhaps hide their features under the ocean)
 			local primaryColour = {love.math.random(), love.math.random(), love.math.random()} -- TEMP
 			local secondaryColour = {love.math.random(), love.math.random(), love.math.random()} -- TEMP, base it on primaryColour
 			local features = {}
-			for featureIndex = 1, love.math.random(0, 50) do
-				local feature = {}
-				-- feature.type = love.math.random() < 0.25 and "ravine" or "crater"
-				feature.type = "ravine"
-				if feature.type == "ravine" then
-					feature.startPoint = util.randomOnSphereSurface(1)
-					local rotationToEnd = util.randomOnSphereSurface(util.randomRange(consts.tau * 0.1, consts.tau * 0.4)) -- Not uniformly distributed but whatever
-					feature.endPoint = vec3.rotate(feature.startPoint, quat.fromAxisAngle(rotationToEnd))
-					feature.angularWidth = util.randomRange(consts.tau * 0.001, consts.tau * 0.005)
-					feature.depth = radius * util.randomRange(0.00001, 0.001)
-					feature.baseColour = {}
-					for i = 1, 3 do
-						feature.baseColour[i] = primaryColour[i] * util.randomRange(0.25, 0.5)
-					end
-					feature.edgeFadeAngularLength = feature.angularWidth * util.randomRange(0.2, 1.5)
+			-- Code here is confusing because feature sets are features that contain features
+			for featureSetIndex = 1, love.math.random(0, 2) do
+				local featureSet = {isSet = true}
+				featureSet.baseColour = {}
+				for i = 1, 3 do
+					featureSet.baseColour[i] = primaryColour[i] * util.randomRange(0.25, 0.5)
 				end
-				features[featureIndex] = feature
+				featureSet.baseColour[4] = util.randomRange(0.5, 1)
+				-- None of this leads to a uniform distribution of feature points on the sphere particularly but whatever
+				featureSet.baseDirection = util.randomOnSphereSurface(1)
+				featureSet.featureMaxAngularDistance = util.randomRange(consts.tau * 0.1, consts.tau * 0.3)
+				for featureIndex = 1, love.math.random(10, 40) do
+				local feature = {}
+					feature.type = love.math.random() < 0.6 and "streak" or "patch"
+					local baseToFeature = util.randomOnSphereSurface(love.math.random() * featureSet.featureMaxAngularDistance)
+					local featurePos = vec3.rotate(featureSet.baseDirection, quat.fromAxisAngle(baseToFeature))
+					if feature.type == "streak" then
+						feature.startPoint = featurePos
+						local rotationToEnd = util.randomOnSphereSurface(util.randomRange(consts.tau * 0.1, consts.tau * 0.4))
+					feature.endPoint = vec3.rotate(feature.startPoint, quat.fromAxisAngle(rotationToEnd))
+						feature.angularWidth = util.randomRange(consts.tau * 0.0001, consts.tau * 0.002)
+						feature.alphaMultiplier = util.randomRange(0.8, 1)
+						feature.edgeFadeAngularLength = feature.angularWidth * util.randomRange(0.2, 1.5)
+					elseif feature.type == "patch" then
+						feature.location = featurePos
+						feature.angularRadius = util.randomRange(consts.tau * 0.002, consts.tau * 0.02)
+						feature.noisiness = util.randomRange(0.2, 0.8)
+						feature.alphaMultiplier = util.randomRange(0.4, 1)
+						feature.edgeFadeAngularLength = feature.angularRadius * util.randomRange(0.2, 2)
+					end
+					featureSet[featureIndex] = feature
+				end
+				features[featureSetIndex] = featureSet
 			end
+			-- Non-set features
+			-- for _=1, love.math.random(0, 100) do
+			-- 	local feature = {}
+			-- 	feature.type = "crater" or "ravine"
+			-- 	features[#features + 1] = feature
+			-- end
 			body:give("celestialBodySurface", {primaryColour, secondaryColour}, features)
 		elseif bodyType == "gaseous" then
 			mass = parent.celestialMass.value * 10 ^ util.randomRange(-4.5, -3)
@@ -179,8 +201,9 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		body:give("celestialRotation", rotationAxis, initialAngle, angularSpeed)
 
 		local seed = love.math.random(0, 2 ^ 32 - 1)
-		local drawFunction = util.getBaseColourCubemapDrawFunction(body, seed, graphicsObjects)
-		body:give("baseColourCubemap", seed, util.generateCubemap(512, nil, drawFunction))
+		local sideSize = 1024
+		local drawFunction = util.getBaseColourCubemapDrawFunction(body, seed, graphicsObjects, sideSize)
+		body:give("baseColourCubemap", seed, util.generateCubemap(sideSize, nil, drawFunction))
 
 		body:give("satellites")
 		state.ecs:addEntity(body)
@@ -208,14 +231,22 @@ function starSystemGeneration:init()
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/baseColourGeneration/noise.glsl")
 	)
+	self.graphicsObjects.featureSetShader = love.graphics.newShader(
+		--[[love.filesystem.read(]]"shaders/baseColourGeneration/featureSet.glsl"--[[)]]
+	)
 
 	self.graphicsObjects.surfaceFeatureMeshes = {}
 	
 	local surfaceFeatureShaders = {}
-	surfaceFeatureShaders.ravine = love.graphics.newShader(
+	surfaceFeatureShaders.streak = love.graphics.newShader(
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
-		love.filesystem.read("shaders/baseColourGeneration/ravine.glsl")
+		love.filesystem.read("shaders/baseColourGeneration/streak.glsl")
+	)
+	surfaceFeatureShaders.patch = love.graphics.newShader(
+		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
+		love.filesystem.read("shaders/include/skyDirection.glsl") ..
+		love.filesystem.read("shaders/baseColourGeneration/patch.glsl")
 	)
 	self.graphicsObjects.surfaceFeatureShaders = surfaceFeatureShaders
 end
