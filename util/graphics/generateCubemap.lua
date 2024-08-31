@@ -5,7 +5,7 @@ return function(sideLength, canvasOptions, drawFunction)
 	local sides = {}
 	for _, orientation in ipairs(consts.cubemapOrientations) do
 		love.graphics.setCanvas(sideCanvas) -- If another canvas is needed, this one can be stored with love.graphics.getCanvas()
-		love.graphics.clear() -- Can clear again in drawFunction
+		love.graphics.clear() -- Can clear again to another colour in drawFunction
 		drawFunction(orientation)
 		love.graphics.setCanvas()
 		sides[#sides + 1] = sideCanvas:newImageData()

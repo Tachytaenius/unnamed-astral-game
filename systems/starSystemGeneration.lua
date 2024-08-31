@@ -196,14 +196,15 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		local rotationAxisRotation = quat.fromAxisAngle(util.randomInSphereVolume(consts.tau * 0.1)) -- Used to perturb rotation axis off forward vector
 		local rotationAxis = vec3.rotate(consts.forwardVector, rotationAxisRotation)
 		local initialAngle = love.math.random() * consts.tau
-		local surfaceSpeed = util.randomRange(0.5, 1) -- TODO
+		local surfaceSpeed = util.randomRange(0.5, 1) * 5000000 -- TODO TEMP
 		local angularSpeed = surfaceSpeed / body.celestialRadius.value
 		body:give("celestialRotation", rotationAxis, initialAngle, angularSpeed)
 
 		local seed = love.math.random(0, 2 ^ 32 - 1)
 		local sideSize = 1024
-		local drawFunction = util.getBaseColourCubemapDrawFunction(body, seed, graphicsObjects, sideSize)
-		body:give("baseColourCubemap", seed, util.generateCubemap(sideSize, nil, drawFunction))
+		local baseColourDrawFunction, normalDrawFunction = util.getPlanetTextureCubemapDrawFunctions(body, seed, graphicsObjects, sideSize)
+		local cubemaps = util.generatePlanetTextureCubemaps(sideSize, baseColourDrawFunction, normalDrawFunction)
+		body:give("textureCubemaps", seed, cubemaps.baseColour, cubemaps.normal)
 
 		body:give("satellites")
 		state.ecs:addEntity(body)
@@ -224,15 +225,15 @@ function starSystemGeneration:init()
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/include/colourSpaceConversion.glsl") ..
-		love.filesystem.read("shaders/baseColourGeneration/base.glsl")
+		love.filesystem.read("shaders/planetTexturing/base.glsl")
 	)
 	self.graphicsObjects.noiseShader = love.graphics.newShader(
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
-		love.filesystem.read("shaders/baseColourGeneration/noise.glsl")
+		love.filesystem.read("shaders/planetTexturing/noise.glsl")
 	)
 	self.graphicsObjects.featureSetShader = love.graphics.newShader(
-		--[[love.filesystem.read(]]"shaders/baseColourGeneration/featureSet.glsl"--[[)]]
+		--[[love.filesystem.read(]]"shaders/planetTexturing/featureSet.glsl"--[[)]]
 	)
 
 	self.graphicsObjects.surfaceFeatureMeshes = {}
@@ -241,12 +242,12 @@ function starSystemGeneration:init()
 	surfaceFeatureShaders.streak = love.graphics.newShader(
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
-		love.filesystem.read("shaders/baseColourGeneration/streak.glsl")
+		love.filesystem.read("shaders/planetTexturing/streak.glsl")
 	)
 	surfaceFeatureShaders.patch = love.graphics.newShader(
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
-		love.filesystem.read("shaders/baseColourGeneration/patch.glsl")
+		love.filesystem.read("shaders/planetTexturing/patch.glsl")
 	)
 	self.graphicsObjects.surfaceFeatureShaders = surfaceFeatureShaders
 end

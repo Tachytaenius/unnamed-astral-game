@@ -23,8 +23,8 @@ uniform vec3 secondaryColour;
 vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
 	vec3 direction = normalize(directionPreNormalise);
 	float colourMixNoise = snoise(direction * colourMixNoiseFrequency) * 0.5 + 0.5;
-	vec3 baseColour = mix(primaryColour, secondaryColour, colourMixNoise);
-	return vec4(baseColour, 1.0);
+	vec3 outColour = mix(primaryColour, secondaryColour, colourMixNoise);
+	return vec4(outColour, 1.0);
 }
 
 #endif

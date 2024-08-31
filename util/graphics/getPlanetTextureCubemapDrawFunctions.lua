@@ -76,7 +76,7 @@ return function(body, seed, graphicsObjects, cubemapSideSize)
 	end
 
 	if body.celestialBody.type == "rocky" then
-		return function(orientation)
+		local function baseColour(orientation)
 			randomGenerator:setState(randomStartState)
 			local worldToCamera = mat4.camera(vec3(), orientation) -- No camera position in the first place
 			local worldToClip = cameraToClip * worldToCamera
@@ -107,7 +107,21 @@ return function(body, seed, graphicsObjects, cubemapSideSize)
 			love.graphics.setBlendMode("alpha")
 			drawSurfaceFeatures(worldToClip, clipToSky)
 		end
+
+		local function normal(orientation)
+
+		end
+
+		return baseColour, normal
 	else
-		return function(orientation) end
+		local function baseColour(orientation)
+
+		end
+
+		local function normal(orientation)
+
+		end
+
+		return baseColour, normal
 	end
 end

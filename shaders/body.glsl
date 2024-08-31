@@ -8,9 +8,10 @@ uniform mat4 modelToWorld;
 
 // varying vec3 fragmentPosition;
 // varying vec3 fragmentNormal;
-varying vec2 fragmentTextureCoord;
+// varying vec2 fragmentTextureCoord;
 // varying vec3 fragmentPositionModelSpace;
 uniform mat3 modelToWorldNormal;
+uniform mat3 worldToModelNormal;
 
 #ifdef VERTEX
 
@@ -20,7 +21,7 @@ attribute vec3 VertexNormal;
 
 vec4 position(mat4 loveTransform, vec4 vertexPosition) {
 	// fragmentNormal = normalize(modelToWorldNormal * VertexNormal);
-	fragmentTextureCoord = VertexTexCoord.st;
+	// fragmentTextureCoord = VertexTexCoord.st;
 	// fragmentPosition = (modelToWorld * vertexPosition).xyz; // w should be 1 so no division needed
 	// fragmentPositionModelSpace = vertexPosition.xyz;
 	return modelToClip * vertexPosition;
@@ -39,6 +40,18 @@ uniform vec3 cameraPosition;
 uniform mat4 clipToSky;
 
 uniform samplerCube baseColourTexture;
+uniform samplerCube normalTexture;
+
+// going crazy lollle (having fun too)
+vec3 flipAroundDirection(vec3 v, vec3 dir) { // dir should be normalised
+	float d = dot(v, dir);
+	vec3 parallel = d * dir;
+	vec3 perpendicular = v - parallel;
+	vec3 flippedParallel = -parallel;
+	return flippedParallel + perpendicular;
+}
+
+uniform vec3 normalFlipDirectionHack;
 
 void effect() {
 	// graaaaaaaaaaaaaahhhhhhhh
@@ -67,8 +80,19 @@ void effect() {
 
 	// vec3 fragmentNormal = normalize(modelToWorldNormal * fragmentPositionModelSpace);
 
-	vec3 baseColour = Texel(baseColourTexture, normalize(modelToWorldNormal * raycastFragmentNormal)).rgb;
-	vec3 totalLight = getLightAtPointNormal(raycastFragmentPosition, raycastFragmentNormal);
+	// mat3 worldToModelNormal = mat3(transpose(modelToWorld)); // mat3(transpose(inverse(worldToModel)))
+	vec3 textureSampleDirection = worldToModelNormal * raycastFragmentNormal;
+	vec3 baseColour = Texel(baseColourTexture, textureSampleDirection).rgb;
+	vec3 normalMapSample = Texel(normalTexture, textureSampleDirection).rgb * 2.0 - 1.0; // Probably normalised, but I don't think it makes a difference here
+	normalMapSample.y *= -1.0; // TODO: Why...?
+	// vec3 normal = normalize((transpose(inverse(modelToWorld)) * vec4(normalMapSample, 0.0)).xyz);
+	vec3 normal = normalize(modelToWorldNormal * normalMapSample);
+	// vec3 normal = normalMapSample;
+	// normal.y *= -1.0;
+	// normal = flipAroundDirection(normal, modelToWorldNormal * vec3(0, 1, 0));
+	// y flipping and gamma correction are like my recurring archnemeses that I fight once a season. during the final battle against y flipping im gonna get almost defeated and then come back thru the power of love and win, and gamma will be redeemed
+
+	vec3 totalLight = getLightAtPointNormal(raycastFragmentPosition, normal);
 
 	love_Canvases[0] = vec4(baseColour * totalLight, 1.0); // lightCanvas
 	love_Canvases[1] = vec4(raycastFragmentPosition, 1.0); // positionCanvas

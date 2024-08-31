@@ -67,6 +67,8 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		-- self.bodyShader:send("modelToWorld", {mat4.components(modelToWorld)})
 		self.bodyShader:send("modelToClip", {mat4.components(modelToClip)})
 		self.bodyShader:send("modelToWorldNormal", {util.getNormalMatrix(modelToWorld)})
+		-- print(mat4.inverse(mat4.inverse(modelToWorld)), modelToWorld) -- utterly absurd precision issues using metres as a unit :3
+		self.bodyShader:send("worldToModelNormal", {util.getInverseNormalMatrix(modelToWorld)})
 
 		-- Fix artifacting with raycasted spherical atmosphere interacting with icosphere body
 		-- self.bodyShader:send("spherise", true)
@@ -75,8 +77,9 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		self.bodyShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.bodyShader:send("bodyRadius", body.celestialRadius.value)
 
-		if body.baseColourCubemap then -- TEMP
-			self.bodyShader:send("baseColourTexture", body.baseColourCubemap.value)
+		if body.textureCubemaps then -- TEMP
+			self.bodyShader:send("baseColourTexture", body.textureCubemaps.baseColour)
+			self.bodyShader:send("normalTexture", body.textureCubemaps.normal)
 		end
 
 		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, true)
