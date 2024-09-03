@@ -65,9 +65,9 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		local modelToClip = worldToClip * modelToWorld
 
 		-- self.bodyShader:send("modelToWorld", {mat4.components(modelToWorld)})
-		self.bodyShader:send("modelToClip", {mat4.components(modelToClip)})
+		-- self.bodyShader:send("modelToClip", {mat4.components(modelToClip)})
 		self.bodyShader:send("modelToWorldNormal", {util.getNormalMatrix(modelToWorld)})
-		-- print(mat4.inverse(mat4.inverse(modelToWorld)), modelToWorld) -- utterly absurd precision issues using metres as a unit :3
+		-- print(mat4.inverse(mat4.inverse(modelToWorld)), modelToWorld) -- utterly absurd precision issues using metres as a unit :3 (you can invert such matrices by inverting the variables used to create them and then making a matrix from those, though)
 		self.bodyShader:send("worldToModelNormal", {util.getInverseNormalMatrix(modelToWorld)})
 
 		-- Fix artifacting with raycasted spherical atmosphere interacting with icosphere body
@@ -85,7 +85,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, true)
 		self:sendShadowSpheres(self.bodyShader, shadowSpheres, positionOffset)
 
-		love.graphics.draw(self.bodyMesh)
+		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
 	end
 
 	-- Draw orbit lines to light canvas, with depth and position information. Their pixels have a negative alpha to indicate that they are absolute colours that should skip tonemapping

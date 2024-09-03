@@ -50,10 +50,13 @@ function celestialCameraControl:update(dt)
 		end
 	end
 
-	local lowestDistance
+	local lowestDistance, closestBody
 	for _, body in ipairs(self.bodies) do
 		local distance = vec3.distance(cameraComponent.absolutePosition, body.celestialMotionState.position)
-		lowestDistance = lowestDistance and math.min(lowestDistance, distance) or distance
+		if not lowestDistance or distance < lowestDistance then
+			lowestDistance = distance
+			closestBody = body
+		end
 	end
 	assert(lowestDistance, "Celestial camera doesn't work without any bodies")
 	local speed = cameraComponent.speedPerDistance * lowestDistance
@@ -80,6 +83,12 @@ function celestialCameraControl:update(dt)
 	local relativeVelocity = util.normaliseOrZero(translation) * speed
 	local velocity = vec3.rotate(relativeVelocity, cameraComponent.orientation)
 	cameraComponent.relativePosition = cameraComponent.relativePosition + velocity * dt
+	-- Collision
+	local relativePositionLength = vec3.length(cameraComponent.relativePosition)
+	local minimumDistance = closestBody.celestialRadius.value * 1.0001
+	if 0 < relativePositionLength and relativePositionLength < minimumDistance then
+		cameraComponent.relativePosition = cameraComponent.relativePosition / relativePositionLength * minimumDistance
+	end
 
 	local rotation = vec3()
 	if love.keyboard.isDown(settings.controls.celestialCamera.pitchDown) then

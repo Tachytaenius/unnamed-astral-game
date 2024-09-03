@@ -108,20 +108,25 @@ return function(body, seed, graphicsObjects, cubemapSideSize)
 			drawSurfaceFeatures(worldToClip, clipToSky)
 		end
 
-		local function normal(orientation)
+		local function heightmap(orientation)
+			randomGenerator:setState(randomStartState)
+			local worldToCamera = mat4.camera(vec3(), orientation) -- No camera position in the first place
+			local worldToClip = cameraToClip * worldToCamera
+			local clipToSky = mat4.inverse(worldToClip)
 
+			-- TODO
 		end
 
-		return baseColour, normal
+		return baseColour, heightmap
 	else
 		local function baseColour(orientation)
 
 		end
 
-		local function normal(orientation)
+		local function heightmap(orientation)
 
 		end
 
-		return baseColour, normal
+		return baseColour, heightmap
 	end
 end

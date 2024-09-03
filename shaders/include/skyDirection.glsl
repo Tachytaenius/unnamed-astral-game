@@ -4,9 +4,9 @@
 
 varying vec3 directionPreNormalise;
 
-#ifdef VERTEX
-
 uniform mat4 clipToSky;
+
+#ifdef VERTEX
 
 vec4 position(mat4 loveTransform, vec4 homogenVertexPos) {
 	directionPreNormalise = (
