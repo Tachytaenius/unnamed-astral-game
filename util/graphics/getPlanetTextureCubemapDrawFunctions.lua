@@ -20,7 +20,15 @@ return function(body, seed, graphicsObjects, cubemapSideSize)
 	local setAlphaCanvas = love.graphics.newCanvas(cubemapSideSize, cubemapSideSize, {format = "r8", linear = true})
 
 	local function drawDummy()
-		love.graphics.draw(graphicsObjects.dummyTexture, 0, 0, 0, love.graphics.getCanvas():getDimensions())
+		local w, h
+		local canvas = love.graphics.getCanvas()
+		if canvas.getDimensions then
+			w, h = canvas:getDimensions()
+		else
+			-- Cubemap
+			w, h = canvas[1][1]:getDimensions()
+		end
+		love.graphics.draw(graphicsObjects.dummyTexture, 0, 0, 0, w, h)
 	end
 	local function sendSky(clipToSky)
 		love.graphics.getShader():send("clipToSky", {mat4.components(clipToSky)})

@@ -12,14 +12,14 @@ graphics.canvasSystemHeight = 270*2
 
 graphics.loadObjCoordMultiplier = vec3(1, 1, -1) -- Export OBJs from Blender with +Y up and +Z forward -- TODO: Why is this needed?
 graphics.objectVertexFormat = {
-	{"VertexPosition", "float", 3},
-	{"VertexTexCoord", "float", 2},
-	{"VertexNormal", "float", 3}
+	{name = "VertexPosition", format = "floatvec3"},
+	{name = "VertexTexCoord", format = "floatvec2"},
+	{name = "VertexNormal", format = "floatvec3"}
 }
 
 graphics.lineVertexFormat = {
-	{"VertexPosition", "float", 3},
-	{"VertexColor", "float", 3}
+	{name = "VertexPosition", format = "floatvec3"},
+	{name = "VertexColor", format = "floatvec3"}
 }
 
 graphics.celestialNearPlaneDistance = 2e5 -- One order of magnitude below megametres

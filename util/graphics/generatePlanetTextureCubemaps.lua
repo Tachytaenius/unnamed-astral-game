@@ -18,10 +18,8 @@ end
 return function(sideLength, baseColourDrawFunction, heightmapDrawFunction)
 	ensureGraphicsObjects()
 
-	local baseColourSideCanvas = love.graphics.newCanvas(sideLength, sideLength)
-	local baseColourSides = {}
-	local heightmapSideCanvas = love.graphics.newCanvas(sideLength, sideLength, {format = "r16f", linear = true})
-	local heightmapSides = {}
+	local baseColourCubemapCanvas = love.graphics.newCanvas(sideLength, sideLength, {type = "cube"})
+	local heightmapCubemapCanvas = love.graphics.newCanvas(sideLength, sideLength, {type = "cube", format = "r16f", linear = true})
 	local cameraToClip = mat4.perspectiveLeftHanded(
 		1,
 		consts.tau / 4,
@@ -29,33 +27,20 @@ return function(sideLength, baseColourDrawFunction, heightmapDrawFunction)
 		0.5
 	)
 
-	for _, orientation in ipairs(consts.cubemapOrientations) do
-		love.graphics.setCanvas(baseColourSideCanvas) -- If another canvas is needed, this setup can be stored with love.graphics.getCanvas()
+	for i, orientation in ipairs(consts.cubemapOrientations) do
+		love.graphics.setCanvas(baseColourCubemapCanvas, i) -- If another canvas is needed, this setup can be stored with love.graphics.getCanvas()
 		love.graphics.clear() -- Can clear again to another colour in drawFunction
 		baseColourDrawFunction(orientation)
-		love.graphics.setCanvas()
-		baseColourSides[#baseColourSides + 1] = baseColourSideCanvas:newImageData()
 
-		love.graphics.setCanvas(heightmapSideCanvas)
+		love.graphics.setCanvas(heightmapCubemapCanvas, i)
 		love.graphics.clear()
 		heightmapDrawFunction(orientation)
-		love.graphics.setCanvas()
-		heightmapSides[#heightmapSides + 1] = heightmapSideCanvas:newImageData()
-
-		-- local minimum, maximum = math.huge, -math.huge
-		-- for x = 0, sideLength - 1 do
-		-- 	for y = 0, sideLength - 1 do
-		-- 		local sample = heightmapSides[#heightmapSides]:getPixel(x, y)
-		-- 		minimum = math.min(minimum, sample)
-		-- 		maximum = math.max(maximum, sample)
-		-- 	end
-		-- end
-		-- print(minimum, maximum)
 	end
 
-	local heightmapCubemap = love.graphics.newCubeImage(heightmapSides, {linear = true})
-	heightmapCubemap:setFilter("linear")
-	heightmapToNormalShader:send("heightmap", heightmapCubemap)
+	love.graphics.setCanvas()
+
+	heightmapCubemapCanvas:setFilter("linear")
+	heightmapToNormalShader:send("heightmap", heightmapCubemapCanvas)
 	local rotateAngle = -- We want an angle that's small enough to catch all changes in the texture. You need a smaller rotation angle the closer you are to the corners of the texture
 		util.angleBetweenVectors(
 			vec3(1, 1, 1),
@@ -68,7 +53,8 @@ return function(sideLength, baseColourDrawFunction, heightmapDrawFunction)
 	heightmapToNormalShader:send("forwardVector", {vec3.components(consts.forwardVector)})
 	-- heightmapToNormalShader:send("upVector", {vec3.components(consts.upVector)})
 	heightmapToNormalShader:send("rightVector", {vec3.components(consts.rightVector)})
-	local normalMapCubemap, normalSides = util.generateCubemap(sideLength, {linear = true}, function(orientation)
+	local normalMapCubemapCanvas = love.graphics.newCanvas(sideLength, sideLength, {type = "cube", linear = true})
+	util.drawToCubemapCanvas(normalMapCubemapCanvas, function(orientation)
 		love.graphics.setShader(heightmapToNormalShader)
 		local worldToCameraStationary = mat4.camera(vec3(), orientation)
 		local clipToSky = mat4.inverse(cameraToClip * worldToCameraStationary)
@@ -87,11 +73,8 @@ return function(sideLength, baseColourDrawFunction, heightmapDrawFunction)
 	end)
 
 	return {
-		baseColour = love.graphics.newCubeImage(baseColourSides),
-		baseColourSides = baseColourSides,
-		normal = normalMapCubemap,
-		normalSides = normalSides,
-		heightmap = heightmapCubemap,
-		heightmapSides = heightmapSides
+		baseColour = baseColourCubemapCanvas,
+		normal = normalMapCubemapCanvas,
+		heightmap = heightmapCubemapCanvas
 	}
 end
