@@ -33,11 +33,6 @@ uniform samplerCube heightmap;
 uniform bool nearPole; // Oh my god
 
 vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
-	float thickness = 5;
-	if (windowCoords.x < thickness || windowCoords.x > love_ScreenSize.x - thickness || windowCoords.y < thickness || windowCoords.y > love_ScreenSize.y - thickness) {
-		// return vec4(vec3(0.0), 1.0);
-	}
-
 	vec3 direction = normalize(directionPreNormalise);
 
 	// Thanks to nearPole the cross result should never have a magnitude of 0. Yippeeee!!!

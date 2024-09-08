@@ -85,7 +85,7 @@ function celestialCameraControl:update(dt)
 	cameraComponent.relativePosition = cameraComponent.relativePosition + velocity * dt
 	-- Collision
 	local relativePositionLength = vec3.length(cameraComponent.relativePosition)
-	local minimumDistance = closestBody.celestialRadius.value * 1.0001
+	local minimumDistance = closestBody.celestialRadius.value * 1.1
 	if 0 < relativePositionLength and relativePositionLength < minimumDistance then
 		cameraComponent.relativePosition = cameraComponent.relativePosition / relativePositionLength * minimumDistance
 	end

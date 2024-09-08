@@ -1,6 +1,6 @@
 #line 1
 
-// Requires include/simplex3d.glsl concatenated
+// Requires include/lib/simplex3d.glsl concatenated
 // Requires include/skyDirection.glsl concatenated
 // Requires include/colourSpaceConversion.glsl
 

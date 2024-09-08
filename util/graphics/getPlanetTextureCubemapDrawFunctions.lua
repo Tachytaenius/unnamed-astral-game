@@ -26,10 +26,10 @@ return function(body, seed, graphicsObjects, cubemapSideSize)
 		love.graphics.getShader():send("clipToSky", {mat4.components(clipToSky)})
 	end
 
-	local function drawSurfaceFeatures(worldToClip, clipToSky)
+	local function drawSurfaceFeaturesBaseColour(worldToClip, clipToSky)
 		local function drawFeature(feature, drawingToAlpha)
 			if feature.type == "streak" then
-				local shader = gfx.surfaceFeatureShaders.streak
+				local shader = gfx.surfaceFeatureBaseColourShaders.streak
 				love.graphics.setShader(shader)
 				shader:send("angularWidth", feature.angularWidth)
 				shader:send("startPoint", {vec3.components(feature.startPoint)})
@@ -40,7 +40,7 @@ return function(body, seed, graphicsObjects, cubemapSideSize)
 				shader:send("clipToSky", {mat4.components(clipToSky)})
 				drawDummy()
 			elseif feature.type == "patch" then
-				local shader = gfx.surfaceFeatureShaders.patch
+				local shader = gfx.surfaceFeatureBaseColourShaders.patch
 				love.graphics.setShader(shader)
 				shader:send("location", {vec3.components(feature.location)})
 				shader:send("angularRadius", feature.angularRadius)
@@ -75,6 +75,39 @@ return function(body, seed, graphicsObjects, cubemapSideSize)
 		end
 	end
 
+	local function drawSurfaceFeaturesHeight(worldToClip, clipToSky)
+		local function drawFeature(feature)
+			if feature.type == "crater" then
+				local shader = gfx.surfaceFeatureHeightmapShaders.crater
+				love.graphics.setShader(shader)
+				shader:send("clipToSky", {mat4.components(clipToSky)})
+				shader:send("featureDirection", {vec3.components(feature.direction)})
+				shader:send("angularRadius", feature.angularRadius)
+				shader:send("depth", feature.depth)
+				shader:send("power", feature.power)
+				shader:send("centreAngularRadius", feature.centreAngularRadius)
+				shader:send("centreHeight", feature.centreHeight)
+				shader:send("centrePower", feature.centrePower)
+				shader:send("wallWidthRampUp", feature.wallWidthRampUp)
+				shader:send("wallWidthRampDown", feature.wallWidthRampDown)
+				shader:send("wallPeakHeight", feature.wallPeakHeight)
+				shader:send("heightMultiplierNoiseFrequency", feature.heightMultiplierNoiseFrequency)
+				shader:send("heightMultiplierNoiseAmplitude", feature.heightMultiplierNoiseAmplitude)
+				drawDummy()
+			end
+		end
+
+		for _, feature in ipairs(body.celestialBodySurface.features) do
+			if feature.isSet then
+				for _, subFeature in ipairs(feature) do
+					drawFeature(subFeature)
+				end
+			else
+				drawFeature(feature)
+			end
+		end
+	end
+
 	if body.celestialBody.type == "rocky" then
 		local function baseColour(orientation)
 			randomGenerator:setState(randomStartState)
@@ -105,16 +138,38 @@ return function(body, seed, graphicsObjects, cubemapSideSize)
 
 			-- Draw surface features
 			love.graphics.setBlendMode("alpha")
-			drawSurfaceFeatures(worldToClip, clipToSky)
+			drawSurfaceFeaturesBaseColour(worldToClip, clipToSky)
 		end
 
 		local function heightmap(orientation)
 			randomGenerator:setState(randomStartState)
-			local worldToCamera = mat4.camera(vec3(), orientation) -- No camera position in the first place
+			local worldToCamera = mat4.camera(vec3(), orientation)
 			local worldToClip = cameraToClip * worldToCamera
 			local clipToSky = mat4.inverse(worldToClip)
 
-			-- TODO
+			local baseShader = gfx.heightmapBaseShader
+			love.graphics.setShader(baseShader)
+			love.graphics.setBlendMode("add") -- Popped
+
+			local bumps = randomGenerator:random() < 0.8
+			local valleys = randomGenerator:random() < 0.3
+			if not (bumps or valleys) then
+				bumps = true
+			end
+			baseShader:send("bumps", bumps)
+			baseShader:send("bumpHeight", randomGenerator:random() * 4 + 0.1)
+			baseShader:send("bumpFrequency", randomGenerator:random() * 20 + 2)
+			baseShader:send("valleys", valleys)
+			baseShader:send("valleyDepth", randomGenerator:random() * 0.9 + 0.1)
+			baseShader:send("valleyDensity", randomGenerator:random() * 40 + 5)
+			baseShader:send("valleyWidth", randomGenerator:random() * 0.02 + 0.01)
+			baseShader:send("seed", seed)
+
+			sendSky(clipToSky)
+			drawDummy()
+
+			love.graphics.setBlendMode("add")
+			drawSurfaceFeaturesHeight(worldToClip, clipToSky)
 		end
 
 		return baseColour, heightmap

@@ -174,11 +174,24 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 				features[featureSetIndex] = featureSet
 			end
 			-- Non-set features
-			-- for _=1, love.math.random(0, 100) do
-			-- 	local feature = {}
-			-- 	feature.type = "crater" or "ravine"
-			-- 	features[#features + 1] = feature
-			-- end
+			for _=1, love.math.random(0, 100) do
+				local feature = {}
+				local impact = util.randomRange(0.1, 1)
+				feature.type = "crater"
+				feature.direction = util.randomOnSphereSurface(1)
+				feature.angularRadius = util.lerp(consts.tau * 0.005, consts.tau * 0.01, impact)
+				feature.depth = util.lerp(0, 10, impact + love.math.random() * 0.2)
+				feature.power = util.randomRange(1, 3)
+				feature.centreAngularRadius = feature.angularRadius * util.randomRange(0.02, 0.1)
+				feature.centreHeight = feature.depth * util.randomRange(0.01, 0.05)
+				feature.centrePower = util.randomRange(1, 2)
+				feature.wallWidthRampUp = feature.angularRadius * util.randomRange(0.01, 0.11)
+				feature.wallWidthRampDown = feature.angularRadius * util.randomRange(0.45, 0.55)
+				feature.wallPeakHeight = util.lerp(0, 8, impact)
+				feature.heightMultiplierNoiseFrequency = util.randomRange(40, 80)
+				feature.heightMultiplierNoiseAmplitude = util.randomRange(0, 0.5)
+				features[#features + 1] = feature
+			end
 			body:give("celestialBodySurface", {primaryColour, secondaryColour}, features)
 		elseif bodyType == "gaseous" then
 			mass = parent.celestialMass.value * 10 ^ util.randomRange(-4.5, -3)
@@ -196,7 +209,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		local rotationAxisRotation = quat.fromAxisAngle(util.randomInSphereVolume(consts.tau * 0.1)) -- Used to perturb rotation axis off forward vector
 		local rotationAxis = vec3.rotate(consts.forwardVector, rotationAxisRotation)
 		local initialAngle = love.math.random() * consts.tau
-		local surfaceSpeed = util.randomRange(0.5, 1) * 5000000 -- TODO TEMP
+		local surfaceSpeed = util.randomRange(0.5, 1) * 50000 -- TODO TEMP
 		local angularSpeed = surfaceSpeed / body.celestialRadius.value
 		body:give("celestialRotation", rotationAxis, initialAngle, angularSpeed)
 
@@ -204,7 +217,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		local sideSize = 1024
 		local baseColourDrawFunction, normalDrawFunction = util.getPlanetTextureCubemapDrawFunctions(body, seed, graphicsObjects, sideSize)
 		local cubemaps = util.generatePlanetTextureCubemaps(sideSize, baseColourDrawFunction, normalDrawFunction)
-		body:give("textureCubemaps", seed, cubemaps.baseColour, cubemaps.normal)
+		body:give("textureCubemaps", seed, cubemaps.baseColour, cubemaps.normal, cubemaps.height)
 
 		body:give("satellites")
 		state.ecs:addEntity(body)
@@ -235,21 +248,37 @@ function starSystemGeneration:init()
 	self.graphicsObjects.featureSetShader = love.graphics.newShader(
 		--[[love.filesystem.read(]]"shaders/planetTexturing/featureSet.glsl"--[[)]]
 	)
+	self.graphicsObjects.heightmapBaseShader = love.graphics.newShader(
+		love.filesystem.read("shaders/include/lib/random.glsl") ..
+		love.filesystem.read("shaders/include/lib/dist.glsl") ..
+		love.filesystem.read("shaders/include/lib/worley.glsl") ..
+		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
+		love.filesystem.read("shaders/include/skyDirection.glsl") ..
+		love.filesystem.read("shaders/planetTexturing/heightmapBase.glsl")
+	)
 
 	self.graphicsObjects.surfaceFeatureMeshes = {}
 	
-	local surfaceFeatureShaders = {}
-	surfaceFeatureShaders.streak = love.graphics.newShader(
+	local surfaceFeatureBaseColourShaders = {}
+	surfaceFeatureBaseColourShaders.streak = love.graphics.newShader(
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/planetTexturing/streak.glsl")
 	)
-	surfaceFeatureShaders.patch = love.graphics.newShader(
+	surfaceFeatureBaseColourShaders.patch = love.graphics.newShader(
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/planetTexturing/patch.glsl")
 	)
-	self.graphicsObjects.surfaceFeatureShaders = surfaceFeatureShaders
+	self.graphicsObjects.surfaceFeatureBaseColourShaders = surfaceFeatureBaseColourShaders
+
+	local surfaceFeatureHeightmapShaders = {}
+	surfaceFeatureHeightmapShaders.crater = love.graphics.newShader(
+		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
+		love.filesystem.read("shaders/include/skyDirection.glsl") ..
+		love.filesystem.read("shaders/planetTexturing/craterHeightmap.glsl")
+	)
+	self.graphicsObjects.surfaceFeatureHeightmapShaders = surfaceFeatureHeightmapShaders
 end
 
 function starSystemGeneration:newWorld()

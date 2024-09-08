@@ -41,6 +41,16 @@ return function(sideLength, baseColourDrawFunction, heightmapDrawFunction)
 		heightmapDrawFunction(orientation)
 		love.graphics.setCanvas()
 		heightmapSides[#heightmapSides + 1] = heightmapSideCanvas:newImageData()
+
+		-- local minimum, maximum = math.huge, -math.huge
+		-- for x = 0, sideLength - 1 do
+		-- 	for y = 0, sideLength - 1 do
+		-- 		local sample = heightmapSides[#heightmapSides]:getPixel(x, y)
+		-- 		minimum = math.min(minimum, sample)
+		-- 		maximum = math.max(maximum, sample)
+		-- 	end
+		-- end
+		-- print(minimum, maximum)
 	end
 
 	local heightmapCubemap = love.graphics.newCubeImage(heightmapSides, {linear = true})
@@ -54,7 +64,7 @@ return function(sideLength, baseColourDrawFunction, heightmapDrawFunction)
 		/ 4 -- Making it even smaller than what is possibly the minimum should be safe, provided our bump map is not using nearest neighbour
 		-- I'm pretty sure it's not going to be perfect.
 	heightmapToNormalShader:send("rotateAngle", rotateAngle)
-	heightmapToNormalShader:send("strength", 0.75)
+	heightmapToNormalShader:send("strength", 1)
 	heightmapToNormalShader:send("forwardVector", {vec3.components(consts.forwardVector)})
 	-- heightmapToNormalShader:send("upVector", {vec3.components(consts.upVector)})
 	heightmapToNormalShader:send("rightVector", {vec3.components(consts.rightVector)})
