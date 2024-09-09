@@ -19,6 +19,8 @@ return function()
 		-- "Pre-update" stage
 		:addSystem(systems.celestialMotion)
 		:addSystem(systems.celestialCameraControl) -- Needs to be separate from setup due to ordering
+		-- "Post-update" (pre-draw?) stage
+		:addSystem(systems.cubemapTextureSlots)
 
 		-- draw systems
 		:addSystem(systems.rendering)

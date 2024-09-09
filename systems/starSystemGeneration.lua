@@ -214,10 +214,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		body:give("celestialRotation", rotationAxis, initialAngle, angularSpeed)
 
 		local seed = love.math.random(0, 2 ^ 32 - 1)
-		local sideSize = 1024
-		local baseColourDrawFunction, normalDrawFunction = util.getPlanetTextureCubemapDrawFunctions(body, seed, graphicsObjects, sideSize)
-		local cubemaps = util.generatePlanetTextureCubemaps(sideSize, baseColourDrawFunction, normalDrawFunction)
-		body:give("textureCubemaps", seed, cubemaps.baseColour, cubemaps.normal, cubemaps.height)
+		body:give("textureCubemapsSeed", seed)
 
 		body:give("satellites")
 		state.ecs:addEntity(body)

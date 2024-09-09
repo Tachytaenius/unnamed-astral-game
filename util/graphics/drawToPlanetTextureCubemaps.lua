@@ -5,6 +5,8 @@ local mat4 = mathsies.mat4
 local consts = require("consts")
 local util = require("util")
 
+local sideLength = consts.bodyTextureCubemapSideLength
+
 local heightmapToNormalShader, dummyTexture
 
 local function ensureGraphicsObjects()
@@ -15,11 +17,13 @@ local function ensureGraphicsObjects()
 	dummyTexture = dummyTexture or love.graphics.newImage(love.image.newImageData(1, 1))
 end
 
-return function(sideLength, baseColourDrawFunction, heightmapDrawFunction)
+return function(slot, baseColourDrawFunction, heightmapDrawFunction)
 	ensureGraphicsObjects()
 
-	local baseColourCubemapCanvas = love.graphics.newCanvas(sideLength, sideLength, {type = "cube"})
-	local heightmapCubemapCanvas = love.graphics.newCanvas(sideLength, sideLength, {type = "cube", format = "r16f", linear = true})
+	local baseColourCubemapCanvas = slot.baseColour
+	local heightmapCubemapCanvas = slot.height
+	local normalMapCubemapCanvas = slot.normal
+
 	local cameraToClip = mat4.perspectiveLeftHanded(
 		1,
 		consts.tau / 4,
@@ -53,7 +57,6 @@ return function(sideLength, baseColourDrawFunction, heightmapDrawFunction)
 	heightmapToNormalShader:send("forwardVector", {vec3.components(consts.forwardVector)})
 	-- heightmapToNormalShader:send("upVector", {vec3.components(consts.upVector)})
 	heightmapToNormalShader:send("rightVector", {vec3.components(consts.rightVector)})
-	local normalMapCubemapCanvas = love.graphics.newCanvas(sideLength, sideLength, {type = "cube", linear = true})
 	util.drawToCubemapCanvas(normalMapCubemapCanvas, function(orientation)
 		love.graphics.setShader(heightmapToNormalShader)
 		local worldToCameraStationary = mat4.camera(vec3(), orientation)

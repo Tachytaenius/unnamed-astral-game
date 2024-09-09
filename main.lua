@@ -48,5 +48,8 @@ function love.draw()
 		(love.graphics.getHeight() - consts.canvasSystemHeight * settings.graphics.canvasScale) / 2
 	love.graphics.draw(outputCanvas, x, y, 0, settings.graphics.canvasScale)
 
-	love.graphics.print(love.timer.getFPS()) -- TEMP
+	love.graphics.print(  -- TEMP (as in, find a better way lol)
+		"FPS: " .. love.timer.getFPS() .. "\n" ..
+		(state.notEnoughCubemapTextureSlotsWarning and "Not enough celestial body cubemap texture slots, some bodies may render wrong" or "") .. "\n"
+	)
 end

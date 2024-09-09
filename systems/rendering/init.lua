@@ -90,6 +90,27 @@ function rendering:init()
 	-- Meshes
 	self.orbitLineMesh = util.generateCircleMesh(1024) -- TEMP: Not enough for distant orbits
 	self.bodyMesh = assets.misc.meshes.icosphereSmooth
+
+	-- Misc
+	self.missingTextureSlot = concord.entity():give("bodyCubemapTextureSlot").bodyCubemapTextureSlot -- HACK: Entity is discarded (not added to world), component is kept
+	util.drawToPlanetTextureCubemaps(self.missingTextureSlot,
+		function(orientation) -- Base colour
+			local w, h = love.graphics.getCanvas()[1][1]:getDimensions() -- Cubemap
+			love.graphics.clear(consts.missingTextureColourA)
+			love.graphics.setColor(consts.missingTextureColourB)
+			local subdivisions = consts.missingTextureSubdivisions
+			for x = 0, subdivisions - 1 do
+				for y = 0, subdivisions - 1 do
+					if (x + y) % 2 == 0 then
+						love.graphics.rectangle("fill", x * w / subdivisions, y * h / subdivisions, w / subdivisions, h / subdivisions)
+					end
+				end
+			end
+		end,
+		function(orientation) -- Heightmap
+			-- Cleared to 0 already
+		end
+	)
 end
 
 function rendering:draw(outputCanvas)

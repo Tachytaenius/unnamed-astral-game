@@ -42,4 +42,11 @@ graphics.cubemapOrientations = {
 	quat.fromAxisAngle(upVector * tau * 0.5)
 }
 
+graphics.bodyTextureCubemapSideLength = 1024
+graphics.bodyCubemapTextureSlotCount = 6
+graphics.bodyTextureCubemapSlotClaimFudgeFactor = 1.5
+graphics.missingTextureSubdivisions = 9
+graphics.missingTextureColourA = {1, 0, 1}
+graphics.missingTextureColourB = {0, 0, 0}
+
 return graphics

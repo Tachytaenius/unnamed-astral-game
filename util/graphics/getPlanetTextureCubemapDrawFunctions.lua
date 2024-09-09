@@ -5,9 +5,11 @@ local mat4 = mathsies.mat4
 
 local consts = require("consts")
 
+local cubemapSideSize = consts.bodyTextureCubemapSideLength
+
 local highestNoiseType = 2
 
-return function(body, seed, graphicsObjects, cubemapSideSize)
+return function(body, seed, graphicsObjects)
 	local randomGenerator = love.math.newRandomGenerator(seed)
 	local randomStartState = randomGenerator:getState() -- Must have state reset at start of drawFunction to ensure random values don't vary across cubemap faces
 	local cameraToClip = mat4.perspectiveLeftHanded(
