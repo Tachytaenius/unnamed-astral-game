@@ -8,6 +8,7 @@ local consts = require("consts")
 local cubemapSideSize = consts.bodyTextureCubemapSideLength
 
 local highestNoiseType = 2
+local highestFractalNoiseType = 3
 
 return function(body, seed, graphicsObjects)
 	local randomGenerator = love.math.newRandomGenerator(seed)
@@ -142,6 +143,8 @@ return function(body, seed, graphicsObjects)
 			noiseShader:send("noiseFrequency", 4)
 			noiseShader:send("noiseEffect", 0.5)
 			noiseShader:send("noiseType", randomGenerator:random(0, highestNoiseType))
+			noiseShader:send("fractalNoiseType", randomGenerator:random(0, highestFractalNoiseType))
+			noiseShader:send("normalFractalNoiseMix", randomGenerator:random() * 0.5 + 0.25)
 			sendSky(clipToSky)
 			love.graphics.setBlendMode("multiply", "premultiplied")
 			drawDummy()
