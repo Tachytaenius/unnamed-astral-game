@@ -174,13 +174,13 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 				features[featureSetIndex] = featureSet
 			end
 			-- Non-set features
-			for _=1, love.math.random(0, 100) do
+			for _=1, love.math.random(0, 300) do
 				local feature = {}
-				local impact = util.randomRange(0.1, 1)
+				local impact = util.randomRange(0.005, 1)
 				feature.type = "crater"
 				feature.direction = util.randomOnSphereSurface(1)
-				feature.angularRadius = util.lerp(consts.tau * 0.005, consts.tau * 0.01, impact)
-				feature.depth = util.lerp(0, 10, impact + love.math.random() * 0.2)
+				feature.angularRadius = impact * consts.tau * 0.01
+				feature.depth = 10 * (impact + love.math.random() * 0.2)
 				feature.power = util.randomRange(1, 3)
 				feature.centreAngularRadius = feature.angularRadius * util.randomRange(0.02, 0.1)
 				feature.centreHeight = feature.depth * util.randomRange(0.01, 0.05)
