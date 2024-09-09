@@ -83,11 +83,15 @@ function celestialCameraControl:update(dt)
 	local relativeVelocity = util.normaliseOrZero(translation) * speed
 	local velocity = vec3.rotate(relativeVelocity, cameraComponent.orientation)
 	cameraComponent.relativePosition = cameraComponent.relativePosition + velocity * dt
+	calculateAbsolutePosition(cameraComponent)
 	-- Collision
-	local relativePositionLength = vec3.length(cameraComponent.relativePosition)
-	local minimumDistance = closestBody.celestialRadius.value * 1.1
-	if 0 < relativePositionLength and relativePositionLength < minimumDistance then
-		cameraComponent.relativePosition = cameraComponent.relativePosition / relativePositionLength * minimumDistance
+	local positionRelativeToClosestBody = cameraComponent.absolutePosition - closestBody.celestialMotionState.position
+	local closestBodyDistance = vec3.length(positionRelativeToClosestBody)
+	local minimumDistance = closestBody.celestialRadius.value * (1 + consts.celestialCameraBodyRadiusCollisionPad)
+	if closestBodyDistance ~= 0 and closestBodyDistance < minimumDistance then
+		local positionRelativeToClosestBodyAfterCollision = positionRelativeToClosestBody / closestBodyDistance * minimumDistance
+		cameraComponent.absolutePosition = positionRelativeToClosestBodyAfterCollision + closestBody.celestialMotionState.position
+		cameraComponent.relativePosition = cameraComponent.absolutePosition - cameraComponent.relativeTo.celestialMotionState.position
 	end
 
 	local rotation = vec3()
@@ -111,8 +115,6 @@ function celestialCameraControl:update(dt)
 	end
 	local rotationQuat = quat.fromAxisAngle(util.limitVectorLength(rotation, 1 * cameraComponent.angularSpeed * dt))
 	cameraComponent.orientation = quat.normalise(cameraComponent.orientation * rotationQuat) -- Normalise to prevent numeric drift
-
-	calculateAbsolutePosition(cameraComponent)
 end
 
 return celestialCameraControl

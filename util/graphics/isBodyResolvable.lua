@@ -38,6 +38,12 @@ return function(body, cameraComponent, fudgeFactor)
 	-- Get angular radius of body
 	local angularRadius = util.getSphereAngularRadius(body.celestialRadius.value, vec3.distance(cameraComponent.absolutePosition, body.celestialMotionState.position))
 
+	-- Check for NaN (inside body (floats can be funky so we're not going to just "is distance <= radius" at the beginning of the function))
+	if angularRadius ~= angularRadius then
+		-- Inside body. May as well say it's resolvable
+		return true
+	end
+
 	-- Compare
 	return fudgeFactor * angularRadius >= largestPixelAngularRadius
 end
