@@ -14,6 +14,9 @@ uniform vec3 bodyPosition;
 uniform vec3 cameraPosition;
 
 uniform mat4 clipToSky;
+uniform vec3 cameraForwardVector;
+uniform float nearDistance;
+uniform float farDistance;
 
 uniform samplerCube baseColourTexture;
 uniform samplerCube normalTexture;
@@ -54,5 +57,7 @@ void effect() {
 	love_Canvases[0] = vec4(baseColour * totalLight, 1.0); // lightCanvas
 	// love_Canvases[0] = vec4(baseColour * totalLight * 0.00000000000000000000001 + baseColour, 1.0); // lightCanvas ((HACK) debug to see base colour while avoiding variable not used error)
 	love_Canvases[1] = vec4(raycastFragmentPosition, 1.0); // positionCanvas
-	// gl_FragDepth = // TODO: Make it smooth
+	vec3 hitPosCameraSpace = hitPosWorldSpace - cameraPosition;
+	float positionZ = dot(cameraForwardVector, hitPosCameraSpace);
+	gl_FragDepth = farDistance * (nearDistance - positionZ) / (positionZ * (nearDistance - farDistance));
 }

@@ -74,6 +74,9 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		-- self.bodyShader:send("spherise", true)
 		self.bodyShader:send("clipToSky", {mat4.components(clipToSky)}) -- This one worked
 		self.bodyShader:send("cameraPosition", {vec3.components(camera.absolutePosition + positionOffset)})
+		self.bodyShader:send("cameraForwardVector", {vec3.components(vec3.rotate(consts.forwardVector, camera.orientation))})
+		self.bodyShader:send("nearDistance", consts.celestialNearPlaneDistance)
+		self.bodyShader:send("farDistance", consts.celestialFarPlaneDistance)
 		self.bodyShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.bodyShader:send("bodyRadius", body.celestialRadius.value)
 
