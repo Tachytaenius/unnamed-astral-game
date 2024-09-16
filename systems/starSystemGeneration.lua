@@ -140,8 +140,9 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 			local secondaryColour = {love.math.random(), love.math.random(), love.math.random()} -- TEMP, base it on primaryColour
 			local features = {}
 			-- Code here is confusing because feature sets are features that contain features
-			for featureSetIndex = 1, love.math.random(0, 2) do
+			for featureSetIndex = 1, love.math.random(0, 2) do -- Colourations
 				local featureSet = {isSet = true}
+				featureSet.drawToOwnAlphaCanvas = true
 				featureSet.baseColour = {}
 				for i = 1, 3 do
 					featureSet.baseColour[i] = primaryColour[i] * util.randomRange(0.25, 0.5)
@@ -158,7 +159,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 					if feature.type == "streak" then
 						feature.startPoint = featurePos
 						local rotationToEnd = util.randomOnSphereSurface(util.randomRange(consts.tau * 0.1, consts.tau * 0.4))
-					feature.endPoint = vec3.rotate(feature.startPoint, quat.fromAxisAngle(rotationToEnd))
+						feature.endPoint = vec3.rotate(feature.startPoint, quat.fromAxisAngle(rotationToEnd))
 						feature.angularWidth = util.randomRange(consts.tau * 0.0001, consts.tau * 0.002)
 						feature.alphaMultiplier = util.randomRange(0.8, 1)
 						feature.edgeFadeAngularLength = feature.angularWidth * util.randomRange(0.2, 1.5)
@@ -172,6 +173,46 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 					featureSet[featureIndex] = feature
 				end
 				features[featureSetIndex] = featureSet
+			end
+			-- Mountain ranges
+			for _=1, love.math.random(0, 12) do
+				local mountainRange = {isSet = true}
+				mountainRange.drawToOwnAlphaCanvas = false
+				mountainRange.startDirection = util.randomOnSphereSurface(1)
+				local rotationToEnd = util.randomOnSphereSurface(util.randomRange(consts.tau * 0.05, consts.tau * 0.2))
+				mountainRange.endDirection = vec3.rotate(mountainRange.startDirection, quat.fromAxisAngle(rotationToEnd))
+				mountainRange.angularWidth = util.randomRange(consts.tau * 0.005, consts.tau * 0.01)
+				mountainRange.taperWidth = util.randomRange(0.2, 0.45)
+				local pole = vec3.normalise(vec3.cross(mountainRange.startDirection, mountainRange.endDirection))
+
+				for _=1, love.math.random(25, 125) do
+					local mountain = {}
+					mountain.type = "mountain"
+					local directionInterpolationI = love.math.random()
+					local tapering = math.min(1, math.min(
+						directionInterpolationI / mountainRange.taperWidth,
+						(1 - directionInterpolationI) / mountainRange.taperWidth
+					))
+					local effectiveAngularWidth = tapering * mountainRange.angularWidth
+					local verticalRotationAngle = util.randomRange(-effectiveAngularWidth / 2, effectiveAngularWidth / 2)
+					local directionBeforeVerticalRotation = util.slerpDirections(mountainRange.startDirection, mountainRange.endDirection, directionInterpolationI)
+					local axis = vec3.normalise(vec3.cross(directionBeforeVerticalRotation, pole))
+					local rotation = quat.fromAxisAngle(verticalRotationAngle * axis)
+					mountain.direction = vec3.rotate(directionBeforeVerticalRotation, rotation)
+					local sizeness = love.math.random() * 4 * tapering + 0.5
+					mountain.angularRadius = sizeness * consts.tau * 0.005
+					mountain.height = (sizeness + util.randomRange(-0.05, 0.2)) * 30
+					mountain.radiusWarpIterations = love.math.random(6, 10) -- Must be at least two
+					mountain.radiusWarpBase = util.randomRange(0.2, 2)
+					mountain.radiusWarpPower = util.randomRange(0.2, 2)
+					mountain.radiusWarpLerp = util.randomRange(0.25, 0.75)
+					mountain.radiusWarpFlowerHarshness = love.math.random() * 0.5
+					mountain.directionWarpDirection = util.randomOnSphereSurface(1)
+					mountain.directionWarpMagnitude = util.randomRange(0.7, 1.3)
+					mountainRange[#mountainRange + 1] = mountain
+				end
+
+				features[#features + 1] = mountainRange
 			end
 			-- Non-set features
 			for _=1, love.math.random(0, 300) do
@@ -274,6 +315,11 @@ function starSystemGeneration:init()
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/planetTexturing/craterHeightmap.glsl")
+	)
+	surfaceFeatureHeightmapShaders.mountain = love.graphics.newShader(
+		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
+		love.filesystem.read("shaders/include/skyDirection.glsl") ..
+		love.filesystem.read("shaders/planetTexturing/mountainHeightmap.glsl")
 	)
 	self.graphicsObjects.surfaceFeatureHeightmapShaders = surfaceFeatureHeightmapShaders
 end

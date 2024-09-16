@@ -66,20 +66,26 @@ return function(body, seed, graphicsObjects)
 
 		for _, feature in ipairs(body.celestialBodySurface.features) do
 			if feature.isSet then
-				love.graphics.push("all")
-				love.graphics.setCanvas(setAlphaCanvas)
-				love.graphics.clear()
-				love.graphics.setBlendMode("lighten", "premultiplied")
-				for _, subFeature in ipairs(feature) do
-					drawFeature(subFeature, true)
-				end
-				love.graphics.pop()
+				if feature.drawToOwnAlphaCanvas then
+					love.graphics.push("all")
+					love.graphics.setCanvas(setAlphaCanvas)
+					love.graphics.clear()
+					love.graphics.setBlendMode("lighten", "premultiplied")
+					for _, subFeature in ipairs(feature) do
+						drawFeature(subFeature, true)
+					end
+					love.graphics.pop()
 
-				love.graphics.setShader(gfx.featureSetShader)
-				-- gfx.featureSetShader:send("clipToSky", {mat4.components(clipToSky)})
-				love.graphics.setColor(feature.baseColour)
-				love.graphics.draw(setAlphaCanvas)
-				love.graphics.setColor(1, 1, 1)
+					love.graphics.setShader(gfx.featureSetShader)
+					-- gfx.featureSetShader:send("clipToSky", {mat4.components(clipToSky)})
+					love.graphics.setColor(feature.baseColour)
+					love.graphics.draw(setAlphaCanvas)
+					love.graphics.setColor(1, 1, 1)
+				else
+					for _, subFeature in ipairs(feature) do
+						drawFeature(subFeature, false)
+					end
+				end
 			else
 				drawFeature(feature, false)
 			end
@@ -104,6 +110,21 @@ return function(body, seed, graphicsObjects)
 				shader:send("wallPeakHeight", feature.wallPeakHeight)
 				shader:send("heightMultiplierNoiseFrequency", feature.heightMultiplierNoiseFrequency)
 				shader:send("heightMultiplierNoiseAmplitude", feature.heightMultiplierNoiseAmplitude)
+				drawDummy()
+			elseif feature.type == "mountain" then
+				local shader = gfx.surfaceFeatureHeightmapShaders.mountain
+				love.graphics.setShader(shader)
+				shader:send("clipToSky", {mat4.components(clipToSky)})
+				shader:send("featureDirection", {vec3.components(feature.direction)})
+				shader:send("angularRadius", feature.angularRadius)
+				shader:send("height", feature.height)
+				shader:send("radiusWarpIterations", feature.radiusWarpIterations)
+				shader:send("radiusWarpBase", feature.radiusWarpBase)
+				shader:send("radiusWarpPower", feature.radiusWarpPower)
+				shader:send("radiusWarpLerp", feature.radiusWarpLerp)
+				shader:send("radiusWarpFlowerHarshness", feature.radiusWarpFlowerHarshness)
+				shader:send("directionWarpDirection", {vec3.components(feature.directionWarpDirection)})
+				shader:send("directionWarpMagnitude", feature.directionWarpMagnitude)
 				drawDummy()
 			end
 		end
