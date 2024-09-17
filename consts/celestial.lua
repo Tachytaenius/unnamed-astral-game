@@ -14,4 +14,11 @@ celestial.celestialCameraBodyRadiusCollisionPad = 0.1
 celestial.celestialCameraAngularSpeed = tau * 0.25
 celestial.celestialCameraVerticalFOV = math.rad(70)
 
+celestial.galaxyRadius = 5e20
+celestial.gameplayOriginDistance = 3e20
+celestial.galaxyDistancePower = 0.6
+celestial.galaxySquash = 0.2
+celestial.galaxyHaloProportion = 0.25
+celestial.galaxyOtherStarCount = 30000
+
 return celestial

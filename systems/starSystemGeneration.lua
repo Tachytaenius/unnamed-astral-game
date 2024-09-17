@@ -102,7 +102,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 			local density = util.randomRange(1200, 1600)
 			local volume = mass / density
 			radius = (volume / (2 / 3 * consts.tau)) ^ (1 / 3)
-			local radiantFlux = mass ^ 4 * 2.451e-95 -- AKA luminosity. In watts. The multiplier is in watts per kilograms to the fourth. Apparently luminosity/radiant flux of a star is proportional to the mass to the 4th (ish. I'm pretending it's more exact)
+			local radiantFlux = util.starMassToRadiantFlux(mass) -- AKA luminosity. In watts. The multiplier in this function is in watts per kilograms to the fourth. Apparently luminosity/radiant flux of a star is proportional to the mass to the 4th (ish. I'm pretending it's more exact)
 			-- Solar mass is 1.988 * 10^30 kg, put it through the equation and you get a radiant flux of approximately 4*10^26 W, which is approximately that of the sun
 			local luminousEfficacy = util.randomRange(90, 100) -- In lumens per Watt
 			local luminousFlux = radiantFlux * luminousEfficacy -- In lumens. Visible equivalent to radiant flux. The luminous efficacy, if at the sun's 93 lumens per Watt, would take a radiant flux of the sun to a luminous flux of the sun (which is around 3.62 * 10^28 lumens, apparently)
