@@ -86,6 +86,10 @@ function rendering:init()
 	self.storeLuminanceShader = love.graphics.newShader("shaders/storeLuminance.glsl")
 	self.maxValueShader = love.graphics.newShader("shaders/maxValue.glsl")
 	self.averageValueShader = love.graphics.newShader("shaders/averageValue.glsl")
+	self.skyboxShader = love.graphics.newShader(
+		"#define FLIP_Y 1\n" .. love.filesystem.read("shaders/include/skyDirection.glsl") ..
+		love.filesystem.read("shaders/skybox.glsl")
+	)
 
 	-- Meshes
 	self.orbitLineMesh = util.generateCircleMesh(1024) -- TEMP: Not enough for distant orbits
@@ -111,6 +115,8 @@ function rendering:init()
 			-- Cleared to 0 already
 		end
 	)
+	self.skybox = love.graphics.newCanvas(consts.skyboxCubemapSideLength, consts.skyboxCubemapSideLength, {type = "cube", format = "rgba16f", linear = true})
+	util.drawGalaxyToSkybox(self.skybox, self:getWorld().galaxy, self:getWorld().originPositionInGalaxy)
 end
 
 function rendering:draw(outputCanvas)

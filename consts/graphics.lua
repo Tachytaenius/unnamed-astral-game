@@ -49,4 +49,6 @@ graphics.missingTextureSubdivisions = 9
 graphics.missingTextureColourA = {1, 0, 1}
 graphics.missingTextureColourB = {0, 0, 0}
 
+graphics.skyboxCubemapSideLength = 2048
+
 return graphics

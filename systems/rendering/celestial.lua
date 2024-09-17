@@ -44,9 +44,13 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	})
 	love.graphics.clear({0, 0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 0}, false, true)
 
-	-- TODO: Draw skybox to light canvas, no depth or position
+	-- Draw skybox to light canvas, no depth or position
 	love.graphics.setDepthMode("always", false)
-	-- Skybox shader, dummy texture, light canvas...
+	love.graphics.setCanvas(self.lightCanvas)
+	love.graphics.setShader(self.skyboxShader)
+	self.skyboxShader:send("clipToSky", {mat4.components(clipToSky)})
+	self.skyboxShader:send("skybox", self.skybox)
+	love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
 
 	-- Draw bodies to light canvas, with depth and position information
 	love.graphics.setCanvas({
