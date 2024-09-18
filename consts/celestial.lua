@@ -19,6 +19,6 @@ celestial.gameplayOriginDistance = 3e20
 celestial.galaxyDistancePower = 0.6
 celestial.galaxySquash = 0.2
 celestial.galaxyHaloProportion = 0.25
-celestial.galaxyOtherStarCount = 30000
+celestial.galaxyOtherStarCount = 300
 
 return celestial

@@ -17,7 +17,7 @@ local function ensureGraphicsObjects()
 	dummyTexture = dummyTexture or love.graphics.newImage(love.image.newImageData(1, 1))
 end
 
-return function(canvas, galaxy, originPositionInGalaxy)
+return function(canvas, otherStars, originPositionInGalaxy)
 	ensureGraphicsObjects()
 
 	local cameraToClip = mat4.perspectiveLeftHanded(
@@ -39,5 +39,23 @@ return function(canvas, galaxy, originPositionInGalaxy)
 		galaxyDustShader:send("clipToSky", {mat4.components(clipToSky)})
 		love.graphics.setShader(galaxyDustShader)
 		love.graphics.draw(dummyTexture, 0, 0, 0, love.graphics.getCanvas()[1][1]:getDimensions())
+	end)
+
+	local solidAngle = consts.tau * (1 - math.cos(consts.pointLightBlurAngularRadius))
+	util.drawToCubemapCanvas(canvas, function(orientation)
+		-- All popped
+		love.graphics.setBlendMode("add")
+		love.graphics.clear(0, 0, 0, 1)
+		for _, star in ipairs(otherStars) do
+			local luminousFlux = star.radiantFlux * star.luminousEfficacy
+			local relativePosition = star.position - originPositionInGalaxy
+			local distance = #relativePosition
+			local direction = relativePosition / distance
+			local illuminance = luminousFlux * distance ^ -2
+			local luminance = illuminance / solidAngle
+			local colour = vec3(unpack(star.colour)) * luminance
+			love.graphics.setColor({vec3.components(colour)})
+			util.drawBlurredPointLight(direction, cameraToClip, orientation, consts.pointLightBlurAngularRadius)
+		end
 	end)
 end

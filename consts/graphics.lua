@@ -22,6 +22,11 @@ graphics.lineVertexFormat = {
 	{name = "VertexColor", format = "floatvec3"}
 }
 
+graphics.blurredPointVertexFormat = {
+	{name = "VertexPosition", format = "floatvec3"},
+	{name = "VertexFade", format = "float"}
+}
+
 graphics.celestialNearPlaneDistance = 2e5 -- One order of magnitude below megametres
 graphics.celestialFarPlaneDistance = 2e13
 graphics.orbitLineColour = {0.25, 0.25, 0.25}
@@ -50,5 +55,8 @@ graphics.missingTextureColourA = {1, 0, 1}
 graphics.missingTextureColourB = {0, 0, 0}
 
 graphics.skyboxCubemapSideLength = 2048
+
+graphics.pointLightBlurAngularRadius = 0.005
+graphics.blurredPointDiskMeshVertices = 8
 
 return graphics

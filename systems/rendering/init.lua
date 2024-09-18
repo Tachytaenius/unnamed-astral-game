@@ -116,7 +116,7 @@ function rendering:init()
 		end
 	)
 	self.skybox = love.graphics.newCanvas(consts.skyboxCubemapSideLength, consts.skyboxCubemapSideLength, {type = "cube", format = "rgba16f", linear = true})
-	util.drawGalaxyToSkybox(self.skybox, self:getWorld().galaxyOtherStars, self:getWorld().originPositionInGalaxy)
+	util.drawGalaxyToSkybox(self.skybox, self:getWorld().state.galaxyOtherStars, self:getWorld().state.originPositionInGalaxy)
 end
 
 function rendering:draw(outputCanvas)
