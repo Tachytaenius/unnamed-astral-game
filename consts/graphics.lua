@@ -26,6 +26,10 @@ graphics.blurredPointVertexFormat = {
 	{name = "VertexPosition", format = "floatvec3"},
 	{name = "VertexFade", format = "float"}
 }
+graphics.blurredPointInstanceVertexFormat = {
+	{name = "InstanceDirection", format = "floatvec3"},
+	{name = "InstanceColour", format = "floatvec3"}
+}
 
 graphics.celestialNearPlaneDistance = 2e5 -- One order of magnitude below megametres
 graphics.celestialFarPlaneDistance = 2e13
@@ -46,6 +50,11 @@ graphics.cubemapOrientations = {
 	quat(),
 	quat.fromAxisAngle(upVector * tau * 0.5)
 }
+graphics.cubemapOrientationsYFlip = {}
+for i, v in ipairs(graphics.cubemapOrientations) do
+	graphics.cubemapOrientationsYFlip[i] = v
+end
+graphics.cubemapOrientationsYFlip[3], graphics.cubemapOrientationsYFlip[4] = graphics.cubemapOrientationsYFlip[4], graphics.cubemapOrientationsYFlip[3]
 
 graphics.bodyTextureCubemapSideLength = 1024
 graphics.bodyCubemapTextureSlotCount = 6

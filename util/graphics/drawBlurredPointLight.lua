@@ -22,7 +22,7 @@ return function(direction, cameraToClip, cameraOrientation, angularRadius) -- Co
 	local scaleToGetAngularRadius = math.tan(angularRadius)
 	local cameraUp = vec3.rotate(consts.upVector, cameraOrientation)
 	local worldToClip = cameraToClip * mat4.camera(vec3(), cameraOrientation)
-	local diskDistanceToSphere = 0 -- TODO (height of spherical cap on unit sphere with the radius / angular radius here) 
+	local diskDistanceToSphere = util.unitSphereSphericalCapHeightFromAngularRadius(angularRadius)
 
 	blurredPointShader:send("direction", {vec3.components(direction)})
 	blurredPointShader:send("cameraUp", {vec3.components(cameraUp)})
@@ -31,7 +31,6 @@ return function(direction, cameraToClip, cameraOrientation, angularRadius) -- Co
 	blurredPointShader:send("worldToClip", {mat4.components(worldToClip)})
 	love.graphics.setShader(blurredPointShader)
 
+	love.graphics.setBlendMode("add")
 	love.graphics.draw(diskMesh)
-
-	love.graphics.setShader()
 end

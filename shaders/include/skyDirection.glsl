@@ -1,6 +1,6 @@
 #line 1
 
-// If needed, concatenate "#define FLIP_Y 1" in front to make it flip screen Y
+// If needed, concatenate "#define FLIP_Y" in front to make it flip screen Y
 
 varying vec3 directionPreNormalise;
 

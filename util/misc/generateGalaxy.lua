@@ -34,7 +34,6 @@ return function(parameters)
 			)
 		)
 		star.colour = {vec3.components(colourVector)}
-		-- Luminous flux is radiantFlux * luminousEfficacy
 		otherStars[i] = star
 	end
 

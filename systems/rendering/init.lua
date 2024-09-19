@@ -80,14 +80,14 @@ function rendering:init()
 	)
 	self.atmosphereShader = love.graphics.newShader(
 		lightsShaderCode ..
-		"#define FLIP_Y 1\n" .. love.filesystem.read("shaders/include/skyDirection.glsl") ..
+		"#define FLIP_Y\n" .. love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/atmosphere.glsl")
 	)
 	self.storeLuminanceShader = love.graphics.newShader("shaders/storeLuminance.glsl")
 	self.maxValueShader = love.graphics.newShader("shaders/maxValue.glsl")
 	self.averageValueShader = love.graphics.newShader("shaders/averageValue.glsl")
 	self.skyboxShader = love.graphics.newShader(
-		"#define FLIP_Y 1\n" .. love.filesystem.read("shaders/include/skyDirection.glsl") ..
+		"#define FLIP_Y\n" .. love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/skybox.glsl")
 	)
 
@@ -115,7 +115,7 @@ function rendering:init()
 			-- Cleared to 0 already
 		end
 	)
-	self.skybox = love.graphics.newCanvas(consts.skyboxCubemapSideLength, consts.skyboxCubemapSideLength, {type = "cube", format = "rgba16f", linear = true})
+	self.skybox = love.graphics.newCanvas(consts.skyboxCubemapSideLength, consts.skyboxCubemapSideLength, {type = "cube", format = "rgba32f", linear = true})
 	util.drawGalaxyToSkybox(self.skybox, self:getWorld().state.galaxyOtherStars, self:getWorld().state.originPositionInGalaxy)
 end
 

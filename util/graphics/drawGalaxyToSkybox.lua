@@ -6,6 +6,8 @@ local util = require("util")
 local consts = require("consts")
 
 local galaxyDustShader, dummyTexture
+local diskMesh
+local blurredPointInstanceShader
 
 local function ensureGraphicsObjects()
 	galaxyDustShader = love.graphics.newShader(
@@ -15,6 +17,9 @@ local function ensureGraphicsObjects()
 		love.filesystem.read("shaders/galaxyDust.glsl")
 	)
 	dummyTexture = dummyTexture or love.graphics.newImage(love.image.newImageData(1, 1))
+
+	blurredPointInstanceShader = love.graphics.newShader("shaders/blurredPointInstanced.glsl")
+	diskMesh = util.generateDiskMesh(consts.blurredPointDiskMeshVertices)
 end
 
 return function(canvas, otherStars, originPositionInGalaxy)
@@ -28,6 +33,8 @@ return function(canvas, otherStars, originPositionInGalaxy)
 	)
 
 	util.drawToCubemapCanvas(canvas, function(orientation)
+		love.graphics.clear(0, 0, 0, 1)
+
 		local worldToCameraStationary = mat4.camera(vec3(), orientation)
 		local clipToSky = mat4.inverse(cameraToClip * worldToCameraStationary)
 
@@ -38,24 +45,52 @@ return function(canvas, otherStars, originPositionInGalaxy)
 		-- galaxyDustShader:send("haloProportion", consts.galaxyHaloProportion)
 		galaxyDustShader:send("clipToSky", {mat4.components(clipToSky)})
 		love.graphics.setShader(galaxyDustShader)
-		love.graphics.draw(dummyTexture, 0, 0, 0, love.graphics.getCanvas()[1][1]:getDimensions())
-	end)
+		-- love.graphics.draw(dummyTexture, 0, 0, 0, love.graphics.getCanvas()[1][1]:getDimensions())
+	end, false, false)
 
 	local solidAngle = consts.tau * (1 - math.cos(consts.pointLightBlurAngularRadius))
+	local diskDistanceToSphere = util.unitSphereSphericalCapHeightFromAngularRadius(consts.pointLightBlurAngularRadius)
+	local scaleToGetAngularRadius = math.tan(consts.pointLightBlurAngularRadius)
+	blurredPointInstanceShader:send("diskDistanceToSphere", diskDistanceToSphere)
+	blurredPointInstanceShader:send("scale", scaleToGetAngularRadius)
+	local instanceMeshVertices = {}
+	for i, star in ipairs(otherStars) do
+		local relativePosition = star.position - originPositionInGalaxy
+		local distance = #relativePosition
+		local direction = relativePosition / distance
+
+		local luminousFlux = star.radiantFlux * star.luminousEfficacy
+		local illuminance = luminousFlux * distance ^ -2
+		local luminance = illuminance / solidAngle
+		-- local colour = {vec3.components(
+		-- 	luminance * vec3(unpack(star.colour))
+		-- )}
+		-- local colour = {
+		-- 	luminance * star.colour[1],
+		-- 	luminance * star.colour[2],
+		-- 	luminance * star.colour[3]
+		-- }
+
+		instanceMeshVertices[i] = {
+			direction.x, direction.y, direction.z,
+			luminance * star.colour[1], luminance * star.colour[2], luminance * star.colour[3]
+		}
+	end
+	local instanceMesh = love.graphics.newMesh(consts.blurredPointInstanceVertexFormat, instanceMeshVertices, "points", "static")
+	diskMesh:attachAttribute("InstanceDirection", instanceMesh, "perinstance")
+	diskMesh:attachAttribute("InstanceColour", instanceMesh, "perinstance")
+
 	util.drawToCubemapCanvas(canvas, function(orientation)
-		-- All popped
+		-- All love graphics state changes are popped
+
+		local worldToClip = cameraToClip * mat4.camera(vec3(), orientation)
+		local cameraUp = vec3.rotate(consts.upVector, orientation)
+		blurredPointInstanceShader:send("worldToClip", {mat4.components(worldToClip)})
+		blurredPointInstanceShader:send("cameraUp", {vec3.components(cameraUp)})
+
 		love.graphics.setBlendMode("add")
-		love.graphics.clear(0, 0, 0, 1)
-		for _, star in ipairs(otherStars) do
-			local luminousFlux = star.radiantFlux * star.luminousEfficacy
-			local relativePosition = star.position - originPositionInGalaxy
-			local distance = #relativePosition
-			local direction = relativePosition / distance
-			local illuminance = luminousFlux * distance ^ -2
-			local luminance = illuminance / solidAngle
-			local colour = vec3(unpack(star.colour)) * luminance
-			love.graphics.setColor({vec3.components(colour)})
-			util.drawBlurredPointLight(direction, cameraToClip, orientation, consts.pointLightBlurAngularRadius)
-		end
-	end)
+
+		love.graphics.setShader(blurredPointInstanceShader)
+		love.graphics.drawInstanced(diskMesh, #otherStars)
+	end, true, true)
 end
