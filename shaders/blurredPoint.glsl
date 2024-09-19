@@ -1,8 +1,17 @@
+// Optionally, #define INSTANCED
+
 varying float fadeMultiplier;
+varying vec3 colour;
 
 #ifdef VERTEX
 
-uniform vec3 direction;
+#ifdef INSTANCED
+attribute vec3 InstanceDirection;
+attribute vec3 InstanceColour;
+#else
+uniform vec3 pointDirection;
+uniform vec3 pointColour;
+#endif
 
 // Both depend on angular radius
 uniform float diskDistanceToSphere;
@@ -15,7 +24,13 @@ attribute float VertexFade;
 
 vec4 position(mat4 loveTransform, vec4 vertexPosition) {
 	fadeMultiplier = 1.0 - VertexFade;
-
+#ifdef INSTANCED
+	colour = InstanceColour;
+	vec3 direction = InstanceDirection;
+#else
+	colour = pointColour;
+	vec3 direction = pointDirection;
+#endif
 	// TODO: Handle singularities
 	vec3 billboardRight = cross(cameraUp, direction);
 	vec3 billboardUp = cross(direction, billboardRight);
@@ -30,7 +45,7 @@ vec4 position(mat4 loveTransform, vec4 vertexPosition) {
 
 vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
 	// Expects additive mode
-	return vec4(fadeMultiplier * loveColour.rgb * loveColour.a, 1.0);
+	return vec4(fadeMultiplier * colour, 1.0);
 }
 
 #endif

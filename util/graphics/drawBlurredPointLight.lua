@@ -14,7 +14,7 @@ local function ensureGraphicsObjects()
 end
 
 -- worldToClip should not translate (camera should be at the origin)
-return function(direction, cameraToClip, cameraOrientation, angularRadius) -- Colour contains brightness. It goes to the lightCanvas which has float pixels.
+return function(direction, cameraToClip, cameraOrientation, angularRadius, colour) -- Colour contains brightness. It goes to the lightCanvas which has float pixels.
 	ensureGraphicsObjects()
 
 	-- We're using disks. The angular radius of a disk at distance 1 is atan(radius) (would divide radius by distance).
@@ -24,7 +24,8 @@ return function(direction, cameraToClip, cameraOrientation, angularRadius) -- Co
 	local worldToClip = cameraToClip * mat4.camera(vec3(), cameraOrientation)
 	local diskDistanceToSphere = util.unitSphereSphericalCapHeightFromAngularRadius(angularRadius)
 
-	blurredPointShader:send("direction", {vec3.components(direction)})
+	blurredPointShader:send("pointDirection", {vec3.components(direction)})
+	blurredPointShader:sendColor("pointColour", colour)
 	blurredPointShader:send("cameraUp", {vec3.components(cameraUp)})
 	blurredPointShader:send("scale", scaleToGetAngularRadius)
 	blurredPointShader:send("diskDistanceToSphere", diskDistanceToSphere)

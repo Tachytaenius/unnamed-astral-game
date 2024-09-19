@@ -18,7 +18,10 @@ local function ensureGraphicsObjects()
 	)
 	dummyTexture = dummyTexture or love.graphics.newImage(love.image.newImageData(1, 1))
 
-	blurredPointInstanceShader = love.graphics.newShader("shaders/blurredPointInstanced.glsl")
+	blurredPointInstanceShader = love.graphics.newShader(
+		"#define INSTANCED\n" ..
+		love.filesystem.read("shaders/blurredPoint.glsl")
+	)
 	diskMesh = util.generateDiskMesh(consts.blurredPointDiskMeshVertices)
 end
 
