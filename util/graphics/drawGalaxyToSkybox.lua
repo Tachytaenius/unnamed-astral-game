@@ -65,18 +65,10 @@ return function(canvas, otherStars, originPositionInGalaxy)
 		local luminousFlux = star.radiantFlux * star.luminousEfficacy
 		local illuminance = luminousFlux * distance ^ -2
 		local luminance = illuminance / solidAngle
-		-- local colour = {vec3.components(
-		-- 	luminance * vec3(unpack(star.colour))
-		-- )}
-		-- local colour = {
-		-- 	luminance * star.colour[1],
-		-- 	luminance * star.colour[2],
-		-- 	luminance * star.colour[3]
-		-- }
 
 		instanceMeshVertices[i] = {
 			direction.x, direction.y, direction.z,
-			luminance * star.colour[1], luminance * star.colour[2], luminance * star.colour[3]
+			love.math.gammaToLinear(luminance * star.colour[1], luminance * star.colour[2], luminance * star.colour[3])
 		}
 	end
 	local instanceMesh = love.graphics.newMesh(consts.blurredPointInstanceVertexFormat, instanceMeshVertices, "points", "static")
