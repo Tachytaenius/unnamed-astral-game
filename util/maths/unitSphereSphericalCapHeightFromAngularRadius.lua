@@ -1,5 +1,3 @@
--- Hacky solution (TEMP)
-
 -- local mathsies = require("lib.mathsies")
 -- local vec2 = mathsies.vec2
 
