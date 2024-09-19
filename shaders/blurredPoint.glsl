@@ -18,6 +18,7 @@ uniform float diskDistanceToSphere;
 uniform float scale;
 
 uniform vec3 cameraUp;
+uniform vec3 cameraRight;
 uniform mat4 worldToClip;
 
 attribute float VertexFade;
@@ -31,8 +32,11 @@ vec4 position(mat4 loveTransform, vec4 vertexPosition) {
 	colour = pointColour;
 	vec3 direction = pointDirection;
 #endif
-	// TODO: Handle singularities
 	vec3 billboardRight = cross(cameraUp, direction);
+	if (length(billboardRight) == 0.0) {
+		// Singularity
+		billboardRight = cameraRight;
+	}
 	vec3 billboardUp = cross(direction, billboardRight);
 	vec3 centre = direction * (1.0 - diskDistanceToSphere);
 	vec3 celestialSpherePos = centre + scale * (billboardRight * vertexPosition.x + billboardUp * vertexPosition.y);

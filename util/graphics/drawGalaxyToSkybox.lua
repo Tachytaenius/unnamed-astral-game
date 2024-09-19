@@ -81,8 +81,10 @@ return function(canvas, otherStars, originPositionInGalaxy)
 
 		local worldToClip = cameraToClip * mat4.camera(vec3(), orientation)
 		local cameraUp = vec3.rotate(consts.upVector, orientation)
-		blurredPointInstanceShader:send("worldToClip", {mat4.components(worldToClip)})
+		local cameraRight = vec3.rotate(consts.rightVector, orientation)
 		blurredPointInstanceShader:send("cameraUp", {vec3.components(cameraUp)})
+		blurredPointInstanceShader:send("cameraRight", {vec3.components(cameraRight)})
+		blurredPointInstanceShader:send("worldToClip", {mat4.components(worldToClip)})
 
 		love.graphics.setBlendMode("add")
 

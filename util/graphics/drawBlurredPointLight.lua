@@ -21,6 +21,7 @@ return function(direction, cameraToClip, cameraOrientation, angularRadius, colou
 	-- We want a radius that gets the right angular radius, so we use tan.
 	local scaleToGetAngularRadius = math.tan(angularRadius)
 	local cameraUp = vec3.rotate(consts.upVector, cameraOrientation)
+	local cameraRight = vec3.rotate(consts.rightVector, cameraOrientation)
 	local worldToClip = cameraToClip * mat4.camera(vec3(), cameraOrientation)
 	local diskDistanceToSphere = util.unitSphereSphericalCapHeightFromAngularRadius(angularRadius)
 
@@ -28,6 +29,7 @@ return function(direction, cameraToClip, cameraOrientation, angularRadius, colou
 	blurredPointShader:send("pointDirection", {vec3.components(direction)})
 	blurredPointShader:sendColor("pointColour", colour)
 	blurredPointShader:send("cameraUp", {vec3.components(cameraUp)})
+	blurredPointShader:send("cameraRight", {vec3.components(cameraRight)})
 	blurredPointShader:send("scale", scaleToGetAngularRadius)
 	blurredPointShader:send("diskDistanceToSphere", diskDistanceToSphere)
 	blurredPointShader:send("worldToClip", {mat4.components(worldToClip)})
