@@ -1,6 +1,6 @@
 // Optionally, #define INSTANCED
 
-varying float fadeMultiplier;
+varying float fade;
 varying vec3 colour;
 
 #ifdef VERTEX
@@ -23,7 +23,7 @@ uniform mat4 worldToClip;
 attribute float VertexFade;
 
 vec4 position(mat4 loveTransform, vec4 vertexPosition) {
-	fadeMultiplier = 1.0 - VertexFade;
+	fade = VertexFade;
 #ifdef INSTANCED
 	colour = InstanceColour;
 	vec3 direction = InstanceDirection;
@@ -43,8 +43,11 @@ vec4 position(mat4 loveTransform, vec4 vertexPosition) {
 
 #ifdef PIXEL
 
+uniform float vertexFadePower;
+
 vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
 	// Expects additive mode
+	float fadeMultiplier = pow(1.0 - fade, vertexFadePower);
 	return vec4(fadeMultiplier * colour, 1.0);
 }
 

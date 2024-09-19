@@ -24,6 +24,7 @@ return function(direction, cameraToClip, cameraOrientation, angularRadius, colou
 	local worldToClip = cameraToClip * mat4.camera(vec3(), cameraOrientation)
 	local diskDistanceToSphere = util.unitSphereSphericalCapHeightFromAngularRadius(angularRadius)
 
+	blurredPointShader:send("vertexFadePower", consts.blurredPointVertexFadePower)
 	blurredPointShader:send("pointDirection", {vec3.components(direction)})
 	blurredPointShader:sendColor("pointColour", colour)
 	blurredPointShader:send("cameraUp", {vec3.components(cameraUp)})

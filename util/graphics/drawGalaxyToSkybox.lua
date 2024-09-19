@@ -56,6 +56,7 @@ return function(canvas, otherStars, originPositionInGalaxy)
 	local scaleToGetAngularRadius = math.tan(consts.pointLightBlurAngularRadius)
 	blurredPointInstanceShader:send("diskDistanceToSphere", diskDistanceToSphere)
 	blurredPointInstanceShader:send("scale", scaleToGetAngularRadius)
+	blurredPointInstanceShader:send("vertexFadePower", consts.blurredPointVertexFadePower)
 	local instanceMeshVertices = {}
 	for i, star in ipairs(otherStars) do
 		local relativePosition = star.position - originPositionInGalaxy

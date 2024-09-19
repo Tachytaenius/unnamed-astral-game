@@ -67,5 +67,6 @@ graphics.skyboxCubemapSideLength = 2048
 
 graphics.pointLightBlurAngularRadius = 0.005
 graphics.blurredPointDiskMeshVertices = 8
+graphics.blurredPointVertexFadePower = 5
 
 return graphics
