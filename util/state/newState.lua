@@ -10,14 +10,15 @@ return function()
 	state.time = 0
 	state.originBodyPosition = vec3()
 
-	state.galaxyOtherStars, state.originPositionInGalaxy = util.generateGalaxy({
+	state.galaxy = util.generateGalaxy({
 		radius = consts.galaxyRadius,
 		distancePower = consts.galaxyDistancePower,
 		squashAmount = consts.galaxySquash,
 		squashDirection = util.randomOnSphereSurface(1),
 		haloProportion = consts.galaxyHaloProportion,
 		otherStarCount = consts.galaxyOtherStarCount,
-		gameplayOriginDistance = consts.gameplayOriginDistance
+		gameplayOriginDistance = consts.gameplayOriginDistance,
+		dustSampleBrightnessMultiplier = consts.galaxyDustSampleBrightnessMultiplier
 	})
 
 	state.ecs = concord.world()

@@ -42,5 +42,14 @@ return function(parameters)
 	local outVector = #crossResult == 0 and consts.rightVector or vec3.normalise(crossResult)
 	local originPositionInGalaxy = outVector * parameters.gameplayOriginDistance
 
-	return otherStars, originPositionInGalaxy
+	return {
+		otherStars = otherStars,
+		originPositionInGalaxy = originPositionInGalaxy,
+
+		forwards = parameters.squashDirection,
+		squashAmount = parameters.squashAmount,
+		radius = parameters.radius,
+		galaxyHaloProportion = parameters.haloProportion,
+		galaxyDustSampleBrightnessMultiplier = parameters.dustSampleBrightnessMultiplier
+	}
 end

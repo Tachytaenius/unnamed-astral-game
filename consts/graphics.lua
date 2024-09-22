@@ -69,4 +69,6 @@ graphics.pointLightBlurAngularRadius = 0.005
 graphics.blurredPointDiskMeshVertices = 8
 graphics.blurredPointVertexFadePower = 5
 
+graphics.galaxyRaySteps = 30
+
 return graphics

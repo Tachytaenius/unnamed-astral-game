@@ -18,7 +18,8 @@ celestial.galaxyRadius = 5e20
 celestial.gameplayOriginDistance = 3e20
 celestial.galaxyDistancePower = 0.6
 celestial.galaxySquash = 0.2
-celestial.galaxyHaloProportion = 0.25
-celestial.galaxyOtherStarCount = 100000
+celestial.galaxyHaloProportion = 0.1
+celestial.galaxyOtherStarCount = 1000000
+celestial.galaxyDustSampleBrightnessMultiplier = 0.4e-5 -- stars made around the order of magnitude -5 in max luminance
 
 return celestial

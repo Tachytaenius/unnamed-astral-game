@@ -25,7 +25,7 @@ local function ensureGraphicsObjects()
 	diskMesh = util.generateDiskMesh(consts.blurredPointDiskMeshVertices)
 end
 
-return function(canvas, otherStars, originPositionInGalaxy)
+return function(canvas, galaxy)
 	ensureGraphicsObjects()
 
 	local cameraToClip = mat4.perspectiveLeftHanded(
@@ -35,20 +35,27 @@ return function(canvas, otherStars, originPositionInGalaxy)
 		0.5
 	)
 
+	local crossResult = vec3.cross(galaxy.forwards, consts.rightVector)
+	local galaxyUp = #crossResult > 0 and vec3.normalise(crossResult) or consts.upVector
+	local galaxyRight = vec3.cross(galaxy.forwards, galaxyUp)
+	-- Divide distances by galaxyRadius as it wasn't very happy with the float exponents
+	galaxyDustShader:send("cameraPosition", {vec3.components(galaxy.originPositionInGalaxy / galaxy.radius)})
+	galaxyDustShader:send("rayStepCount", consts.galaxyRaySteps)
+	galaxyDustShader:send("squashAmount", galaxy.squashAmount) -- squashDirection is galaxy forwards
+	galaxyDustShader:send("galaxyRadius", galaxy.radius / galaxy.radius) -- 1
+	galaxyDustShader:send("haloProportion", galaxy.galaxyHaloProportion)
+	galaxyDustShader:send("sampleBrightnessMultiplier", galaxy.galaxyDustSampleBrightnessMultiplier)
+	galaxyDustShader:send("galaxyForwards", {vec3.components(galaxy.forwards)})
+	galaxyDustShader:send("galaxyUp", {vec3.components(galaxyUp)})
+	galaxyDustShader:send("galaxyRight", {vec3.components(galaxyRight)})
 	util.drawToCubemapCanvas(canvas, function(orientation)
 		love.graphics.clear(0, 0, 0, 1)
 
 		local worldToCameraStationary = mat4.camera(vec3(), orientation)
 		local clipToSky = mat4.inverse(cameraToClip * worldToCameraStationary)
-
-		-- galaxyDustShader:send("cameraPosition", {vec3.components(originPositionInGalaxy)})
-		-- galaxyDustShader:send("rayStepCount", consts.galaxyRaySteps)
-		-- galaxyDustShader:send("squash", {vec3.components(consts.galaxySquash)})
-		-- galaxyDustShader:send("galaxyRadius", consts.galaxyRadius)
-		-- galaxyDustShader:send("haloProportion", consts.galaxyHaloProportion)
 		galaxyDustShader:send("clipToSky", {mat4.components(clipToSky)})
 		love.graphics.setShader(galaxyDustShader)
-		-- love.graphics.draw(dummyTexture, 0, 0, 0, love.graphics.getCanvas()[1][1]:getDimensions())
+		love.graphics.draw(dummyTexture, 0, 0, 0, love.graphics.getCanvas()[1][1]:getDimensions())
 	end, false, false)
 
 	local solidAngle = consts.tau * (1 - math.cos(consts.pointLightBlurAngularRadius))
@@ -58,8 +65,8 @@ return function(canvas, otherStars, originPositionInGalaxy)
 	blurredPointInstanceShader:send("scale", scaleToGetAngularRadius)
 	blurredPointInstanceShader:send("vertexFadePower", consts.blurredPointVertexFadePower)
 	local instanceMeshVertices = {}
-	for i, star in ipairs(otherStars) do
-		local relativePosition = star.position - originPositionInGalaxy
+	for i, star in ipairs(galaxy.otherStars) do
+		local relativePosition = star.position - galaxy.originPositionInGalaxy
 		local distance = #relativePosition
 		local direction = relativePosition / distance
 
@@ -89,6 +96,6 @@ return function(canvas, otherStars, originPositionInGalaxy)
 		love.graphics.setBlendMode("add")
 
 		love.graphics.setShader(blurredPointInstanceShader)
-		love.graphics.drawInstanced(diskMesh, #otherStars)
+		love.graphics.drawInstanced(diskMesh, #galaxy.otherStars)
 	end, true, true)
 end
