@@ -38,6 +38,10 @@ function rendering:init()
 	self.atmosphereLightCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f", linear = true}) -- Separated and rejoined during tonemapping because of absolute colours being mixed into the light canvas
 	self.maxLuminanceCanvas = love.graphics.newCanvas(wNextPowerOf2, hNextPowerOf2, {format = "r32f", mipmaps = "manual", linear = true})
 	self.averageLuminanceCanvas = love.graphics.newCanvas(wNextPowerOf2, hNextPowerOf2, {format = "r32f", mipmaps = "manual", linear = true})
+	self.eyeAdaptationCanvasA = love.graphics.newCanvas(2, 1, {format = "r32f", linear = true})
+	self.eyeAdaptationCanvasA:setFilter("nearest") -- It's meant to carry two separate variables. Blurring would not be good!
+	self.eyeAdaptationCanvasB = love.graphics.newCanvas(2, 1, {format = "r32f", linear = true}) -- There are two, they are swapped between to be able to do maths on source and destination values when drawing to it
+	self.eyeAdaptationCanvasB:setFilter("nearest")
 	self.positionCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f", linear = true})
 	self.depthBuffer = love.graphics.newCanvas(w, h, {format = "depth32f"})
 	self.HUDCanvas = love.graphics.newCanvas(w, h)
@@ -90,6 +94,7 @@ function rendering:init()
 		"#define FLIP_Y\n" .. love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/skybox.glsl")
 	)
+	self.eyeAdaptationShader = love.graphics.newShader("shaders/eyeAdaptation.glsl")
 
 	-- Meshes
 	self.orbitLineMesh = util.generateCircleMesh(1024) -- TEMP: Not enough for distant orbits
@@ -119,11 +124,11 @@ function rendering:init()
 	util.drawGalaxyToSkybox(self.skybox, self:getWorld().state.galaxy)
 end
 
-function rendering:draw(outputCanvas)
+function rendering:draw(outputCanvas, dt)
 	local state = self:getWorld().state
 	if state.controlEntity then
 		if state.controlEntity.celestialCamera then
-			self:renderCelestialCamera(outputCanvas, state.controlEntity)
+			self:renderCelestialCamera(outputCanvas, dt, state.controlEntity)
 		-- elseif state.controlEntity.player, etc
 		end
 	end

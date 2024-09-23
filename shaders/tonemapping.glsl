@@ -41,13 +41,19 @@ vec3 tachy3(vec3 inColour, float maxLuminance) {
 	return inColour / maxLuminance;
 }
 
+uniform sampler2D eyeAdaptationCanvas;
+
 uniform sampler2D atmosphereLightCanvas;
 
 vec4 effect(vec4 colour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
-	// Sometimes the canvasses can contain negative values
-	float averageLuminance = max(0.0, Texel(averageLuminanceCanvas, vec2(0.5)).r);
-	float maxLuminance = max(0.0, Texel(maxLuminanceCanvas, vec2(0.5)).r);
+	// float maxLuminance = max(0.0, Texel(maxLuminanceCanvas, vec2(0.5)).r);
+	float maxLuminance = Texel(eyeAdaptationCanvas, vec2(0.0, 0.5)).r;
 	maxLuminance = maxLuminance == 0.0 ? 1.0 : maxLuminance;
+
+	// float averageLuminance = max(0.0, Texel(averageLuminanceCanvas, vec2(0.5)).r);
+	// TODO: test avg value when nothing is on screen
+	// float averageLuminance = Texel(eyeAdaptationCanvas, vec2(1.0, 0.5));
+	// averageLuminance = averageLuminance == 0.0 ? 1.0 : averageLuminance;
 
 	vec4 inSampleSolid = Texel(image, textureCoords);
 	vec4 inSampleAtmosphere = Texel(atmosphereLightCanvas, textureCoords);

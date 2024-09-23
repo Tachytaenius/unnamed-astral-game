@@ -10,7 +10,7 @@ local util = require("util")
 
 local celestial = {}
 
-function celestial:renderCelestialCamera(outputCanvas, entity)
+function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 	local camera = entity.celestialCamera
 
 	love.graphics.setMeshCullMode("none")
@@ -207,18 +207,45 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.averageLuminanceCanvas:getDimensions(i))
 	end
 
-	-- print(self.maxLuminanceCanvas:newImageData(nil, self.maxLuminanceCanvas:getMipmapCount()):getPixel(0, 0))
+	local maxLuminanceCanvas1x1 = self.maxLuminanceCanvasViews[self.maxLuminanceCanvas:getMipmapCount()]
+	local averageLuminanceCanvas1x1 = self.maxLuminanceCanvasViews[self.averageLuminanceCanvas:getMipmapCount()]
+
+	-- Eye adaptation over time
+	love.graphics.setCanvas(self.eyeAdaptationCanvasB)
+	love.graphics.setShader(self.eyeAdaptationShader)
+	self.eyeAdaptationShader:send("thisFrameMaxLuminanceCanvas", maxLuminanceCanvas1x1)
+	self.eyeAdaptationShader:send("thisFrameAverageLuminanceCanvas", averageLuminanceCanvas1x1)
+	self.eyeAdaptationShader:send("smoothing", consts.eyeAdaptationSmoothing)
+	self.eyeAdaptationShader:send("moveRate", consts.eyeAdaptationMoveRate)
+	self.eyeAdaptationShader:send("moveLinearly", false) -- Through "base 2 orders of magnitude"
+	self.eyeAdaptationShader:send("dt", dt)
+	love.graphics.draw(self.eyeAdaptationCanvasA)
 
 	-- Draw light canvas to output canvas with HDR, then draw HUD canvas as normal
 	love.graphics.setCanvas(outputCanvas)
 	love.graphics.clear()
-	self.tonemappingShader:send("maxLuminanceCanvas", self.maxLuminanceCanvasViews[self.maxLuminanceCanvas:getMipmapCount()])
+	-- self.tonemappingShader:send("maxLuminanceCanvas", maxLuminanceCanvas1x1)
+	-- self.tonemappingShader:send("averageLuminanceCanvas", maxLuminanceCanvas1x1)
+	self.tonemappingShader:send("eyeAdaptationCanvas", self.eyeAdaptationCanvasB)
 	love.graphics.setShader(self.tonemappingShader)
 	self.tonemappingShader:send("atmosphereLightCanvas", self.atmosphereLightCanvas)
 	love.graphics.draw(self.lightCanvas)
 	love.graphics.setShader()
 	love.graphics.draw(self.HUDCanvas)
 	love.graphics.setCanvas()
+
+	-- local eyeData = self.eyeAdaptationCanvasB:newImageData()
+	-- print(
+	-- 	self.maxLuminanceCanvas:newImageData(nil, self.maxLuminanceCanvas:getMipmapCount()):getPixel(0, 0),
+	-- 	self.averageLuminanceCanvas:newImageData(nil, self.averageLuminanceCanvas:getMipmapCount()):getPixel(0, 0),
+	-- 	eyeData:getPixel(0, 0),
+	-- 	(eyeData:getPixel(1, 0))
+	-- )
+	-- print(math.log(eyeData:getPixel(0, 0), 2))
+	-- print()
+
+	-- Flip eye adaptation canvasses
+	self.eyeAdaptationCanvasA, self.eyeAdaptationCanvasB = self.eyeAdaptationCanvasB, self.eyeAdaptationCanvasA
 end
 
 function celestial:getLights()

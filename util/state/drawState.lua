@@ -1,3 +1,3 @@
-return function(state, outputCanvas)
-	state.ecs:emit("draw", outputCanvas)
+return function(state, outputCanvas, dt)
+	state.ecs:emit("draw", outputCanvas, dt)
 end

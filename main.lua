@@ -21,6 +21,8 @@ local outputCanvas
 local paused -- Updated and used in update and used in draw
 local forceRedrawCanvas -- Reset after being read in draw. Used in case toggling fullscreen empties canvasses or whatever
 
+local lastDt -- To allow draw to access dt
+
 function love.load(args)
 	util.remakeWindow()
 	assets.load()
@@ -35,11 +37,12 @@ function love.update(dt)
 	if not paused then
 		util.updateState(state, dt)
 	end
+	lastDt = dt
 end
 
 function love.draw()
 	if not paused or forceRedrawCanvas then
-		util.drawState(state, outputCanvas)
+		util.drawState(state, outputCanvas, lastDt)
 	end
 	forceRedrawCanvas = false
 
