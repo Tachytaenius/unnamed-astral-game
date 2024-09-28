@@ -1,12 +1,25 @@
 uniform sampler2D thisFrameMaxLuminanceCanvas;
 uniform sampler2D thisFrameAverageLuminanceCanvas;
+uniform float averageLuminanceLogDelta;
 uniform bool moveLinearly;
 uniform float smoothing;
 uniform float moveRate;
 uniform float dt;
+uniform bool jump;
+uniform bool expAverage;
 
 vec4 effect(vec4 loveColour, sampler2D previousFrameEyeAdaptationCanvas, vec2 textureCoords, vec2 windowCoords) {
-	float thisFrameValue = textureCoords.x < 0.5 ? Texel(thisFrameMaxLuminanceCanvas, vec2(0.5, 0.5)).r : Texel(thisFrameAverageLuminanceCanvas, vec2(0.5, 0.5)).r;
+	bool maxSide = textureCoords.x < 0.5; // Otherwise average side
+	float thisFrameValue = maxSide ?
+		Texel(thisFrameMaxLuminanceCanvas, vec2(0.5, 0.5)).r :
+		(
+			expAverage ?
+			exp(Texel(thisFrameAverageLuminanceCanvas, vec2(0.5, 0.5)).r) - averageLuminanceLogDelta :
+			Texel(thisFrameAverageLuminanceCanvas, vec2(0.5, 0.5)).r
+		);
+	if (jump) {
+		return vec4(vec3(thisFrameValue), 1.0);
+	}
 	float previousFrameEyeValue = Texel(previousFrameEyeAdaptationCanvas, textureCoords).r;
 
 	float logDelta = 0.000000001; // Must be very small for the linear movement approach to work well with negative exponents

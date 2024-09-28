@@ -71,6 +71,7 @@ graphics.blurredPointVertexFadePower = 5
 
 graphics.galaxyRaySteps = 20
 
+graphics.luminanceLogDelta = 0.001
 -- For two different approaches to eye adaptation
 graphics.eyeAdaptationSmoothing = 0.01 -- Framerate-independent lerp through "base 2 orders of magnitude"
 graphics.eyeAdaptationMoveRate = 5 -- Moving linearly through "base 2 orders of magnitude"

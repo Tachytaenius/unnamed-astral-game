@@ -23,22 +23,33 @@ vec3 tachy(vec3 inColour, float maxLuminance) {
 }
 
 // My second tonemapping function
-const float averageLuminanceOut = 0.5;
-const float maxLuminanceOut = 1.0;
-const float exponentNumerator = log(maxLuminanceOut / averageLuminanceOut);
-// Due to the average and max luminance being calculated as a mipmap, we are sending it as a texture
-uniform sampler2D averageLuminanceCanvas;
-uniform sampler2D maxLuminanceCanvas;
-vec3 tachy2(vec3 inColour, float averageLuminance, float maxLuminance) {
+vec3 tachy2(vec3 inColour, float maxLuminance, float averageLuminance, float maxLuminanceOut, float averageLuminanceOut) {
 	float inColourLuminance = dot(inColour, vec3(0.2126, 0.7152, 0.0722));
-	float exponent = exponentNumerator / log(maxLuminance / averageLuminance);
-	float outColourLuminance = averageLuminanceOut * pow(inColourLuminance / averageLuminance, exponent);
+	float outColourLuminance =
+		averageLuminanceOut
+		* pow(inColourLuminance / averageLuminance,
+			log(maxLuminanceOut / averageLuminanceOut) /
+			log(maxLuminance / averageLuminance)
+		);
 	return inColour / inColourLuminance * outColourLuminance;
 }
 
 // Third tonemapper of mine, based on the one above
 vec3 tachy3(vec3 inColour, float maxLuminance) {
 	return inColour / maxLuminance;
+}
+
+vec3 finalMaybe(vec3 inColour, float maxLuminance, float averageLuminance) {
+	float inColourLuminance = dot(inColour, vec3(0.2126, 0.7152, 0.0722));
+	float k = 1.0;
+	float lWhite = maxLuminance * maxLuminance;
+	float l = k / averageLuminance * inColourLuminance;
+	float ld = l * (1.0 + l / lWhite) / (1.0 + l);
+
+	vec3 xyY = rgb2xyY(inColour);
+	xyY.z = ld;
+	return xyY2rgb(xyY);
+	// return inColour / inColourLuminance * ld;
 }
 
 uniform sampler2D eyeAdaptationCanvas;
@@ -51,9 +62,8 @@ vec4 effect(vec4 colour, sampler2D image, vec2 textureCoords, vec2 windowCoords)
 	maxLuminance = maxLuminance == 0.0 ? 1.0 : maxLuminance;
 
 	// float averageLuminance = max(0.0, Texel(averageLuminanceCanvas, vec2(0.5)).r);
-	// TODO: test avg value when nothing is on screen
-	// float averageLuminance = Texel(eyeAdaptationCanvas, vec2(1.0, 0.5));
-	// averageLuminance = averageLuminance == 0.0 ? 1.0 : averageLuminance;
+	float averageLuminance = Texel(eyeAdaptationCanvas, vec2(1.0, 0.5)).r;
+	averageLuminance = averageLuminance == 0.0 ? 0.5 : averageLuminance;
 
 	vec4 inSampleSolid = Texel(image, textureCoords);
 	vec4 inSampleAtmosphere = Texel(atmosphereLightCanvas, textureCoords);
@@ -61,6 +71,7 @@ vec4 effect(vec4 colour, sampler2D image, vec2 textureCoords, vec2 windowCoords)
 		(inSampleSolid.a >= 0.0 ? inSampleSolid.rgb : maxLuminance * inSampleSolid.rgb)
 		+ inSampleAtmosphere.rgb;
 
+	// vec3 outColour = tachy2(inColour, maxLuminance, averageLuminance, 1.0, 0.5);
 	vec3 outColour = tachy3(inColour, maxLuminance);
 
 	return vec4(outColour, 1.0);

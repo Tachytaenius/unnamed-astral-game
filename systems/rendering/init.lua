@@ -88,6 +88,7 @@ function rendering:init()
 		love.filesystem.read("shaders/atmosphere.glsl")
 	)
 	self.storeLuminanceShader = love.graphics.newShader("shaders/storeLuminance.glsl")
+	self.logLuminanceShader = love.graphics.newShader("shaders/logLuminance.glsl")
 	self.maxValueShader = love.graphics.newShader("shaders/maxValue.glsl")
 	self.averageValueShader = love.graphics.newShader("shaders/averageValue.glsl")
 	self.skyboxShader = love.graphics.newShader(
@@ -101,6 +102,7 @@ function rendering:init()
 	self.bodyMesh = assets.misc.meshes.icosphereSmooth
 
 	-- Misc
+	self.eyeAdaptationUninitialised = true
 	self.missingTextureSlot = concord.entity():give("bodyCubemapTextureSlot").bodyCubemapTextureSlot -- HACK: Entity is discarded (not added to world), component is kept
 	util.drawToPlanetTextureCubemaps(self.missingTextureSlot,
 		function(orientation) -- Base colour

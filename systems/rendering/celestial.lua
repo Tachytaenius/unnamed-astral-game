@@ -171,20 +171,21 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 		love.graphics.setColor(1, 1, 1)
 	end
 
-	-- Get log of luminance of lightCanvas into canvasses that use it
+	-- Put luminance of lightCanvas into max luminance canvas
 	love.graphics.setShader(self.storeLuminanceShader)
 	self.storeLuminanceShader:send("atmosphereLightCanvas", self.atmosphereLightCanvas)
 	love.graphics.setCanvas(self.maxLuminanceCanvas)
-	-- NOTE: Gamma-correct rendering causes the canvas to NOT have a value of -1, but it is negative, and we only check for negativity in the average luminance shader
-	love.graphics.clear(-1, 0, 0)
+	love.graphics.clear(-1, 0, 0) -- NOTE: Gamma-correct rendering causes the canvas to NOT have a value of -1, but it is negative, and we only check for negativity in the shader
 	love.graphics.draw(self.lightCanvas)
+	-- Put log luminance into average luminance canvas
+	local logAverage = false
+	love.graphics.setShader(logAverage and self.logLuminanceShader or nil)
+	self.logLuminanceShader:send("delta", consts.luminanceLogDelta)
 	love.graphics.setCanvas(self.averageLuminanceCanvas)
 	love.graphics.clear(-1, 0, 0)
-	-- Instead of using shader twice, use previous output
-	love.graphics.setShader()
-	love.graphics.draw(self.maxLuminanceCanvas)
+	love.graphics.draw(self.maxLuminanceCanvas) -- Gets log of the previous step's result
 
-	-- Get maximum from the luminance texture
+	-- Get maximum luminance
 	love.graphics.setShader(self.maxValueShader)
 	for i = 2, self.maxLuminanceCanvas:getMipmapCount() do
 		love.graphics.setCanvas(self.maxLuminanceCanvasViews[i])
@@ -195,7 +196,7 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 		})
 		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.maxLuminanceCanvas:getDimensions(i))
 	end
-	-- Get average from the luminance texture
+	-- Get average log luminance
 	love.graphics.setShader(self.averageValueShader)
 	for i = 2, self.averageLuminanceCanvas:getMipmapCount() do
 		love.graphics.setCanvas(self.averageLuminanceCanvasViews[i])
@@ -208,18 +209,22 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 	end
 
 	local maxLuminanceCanvas1x1 = self.maxLuminanceCanvasViews[self.maxLuminanceCanvas:getMipmapCount()]
-	local averageLuminanceCanvas1x1 = self.maxLuminanceCanvasViews[self.averageLuminanceCanvas:getMipmapCount()]
+	local averageLuminanceCanvas1x1 = self.averageLuminanceCanvasViews[self.averageLuminanceCanvas:getMipmapCount()]
 
 	-- Eye adaptation over time
 	love.graphics.setCanvas(self.eyeAdaptationCanvasB)
 	love.graphics.setShader(self.eyeAdaptationShader)
 	self.eyeAdaptationShader:send("thisFrameMaxLuminanceCanvas", maxLuminanceCanvas1x1)
 	self.eyeAdaptationShader:send("thisFrameAverageLuminanceCanvas", averageLuminanceCanvas1x1)
+	self.eyeAdaptationShader:send("averageLuminanceLogDelta", consts.luminanceLogDelta)
 	self.eyeAdaptationShader:send("smoothing", consts.eyeAdaptationSmoothing)
 	self.eyeAdaptationShader:send("moveRate", consts.eyeAdaptationMoveRate)
 	self.eyeAdaptationShader:send("moveLinearly", false) -- Through "base 2 orders of magnitude"
 	self.eyeAdaptationShader:send("dt", dt)
+	self.eyeAdaptationShader:send("jump", self.eyeAdaptationUninitialised)
+	self.eyeAdaptationShader:send("expAverage", logAverage)
 	love.graphics.draw(self.eyeAdaptationCanvasA)
+	self.eyeAdaptationUninitialised = false
 
 	-- Draw light canvas to output canvas with HDR, then draw HUD canvas as normal
 	love.graphics.setCanvas(outputCanvas)
@@ -234,15 +239,14 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 	love.graphics.draw(self.HUDCanvas)
 	love.graphics.setCanvas()
 
-	-- local eyeData = self.eyeAdaptationCanvasB:newImageData()
-	-- print(
-	-- 	self.maxLuminanceCanvas:newImageData(nil, self.maxLuminanceCanvas:getMipmapCount()):getPixel(0, 0),
-	-- 	self.averageLuminanceCanvas:newImageData(nil, self.averageLuminanceCanvas:getMipmapCount()):getPixel(0, 0),
-	-- 	eyeData:getPixel(0, 0),
-	-- 	(eyeData:getPixel(1, 0))
-	-- )
-	-- print(math.log(eyeData:getPixel(0, 0), 2))
-	-- print()
+	local eyeData = self.eyeAdaptationCanvasB:newImageData()
+	local average = self.averageLuminanceCanvas:newImageData(nil, self.averageLuminanceCanvas:getMipmapCount()):getPixel(0, 0)
+	print(
+		"max: " .. self.maxLuminanceCanvas:newImageData(nil, self.maxLuminanceCanvas:getMipmapCount()):getPixel(0, 0) .. "\n" ..
+		"avg: " .. (logAverage and math.exp(average) - consts.luminanceLogDelta or average) .. "\n" ..
+		"eyeMax: " .. eyeData:getPixel(0, 0) .. "\n" ..
+		"eyeAvg: " .. (eyeData:getPixel(1, 0)) .. "\n"
+	)
 
 	-- Flip eye adaptation canvasses
 	self.eyeAdaptationCanvasA, self.eyeAdaptationCanvasB = self.eyeAdaptationCanvasB, self.eyeAdaptationCanvasA
