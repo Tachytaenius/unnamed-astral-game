@@ -171,14 +171,17 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 		love.graphics.setColor(1, 1, 1)
 	end
 
+	-- What approach are we to struggle with today?
+	local logAverage = false
+	local fakeLuminance = true
 	-- Put luminance of lightCanvas into max luminance canvas
 	love.graphics.setShader(self.storeLuminanceShader)
 	self.storeLuminanceShader:send("atmosphereLightCanvas", self.atmosphereLightCanvas)
+	self.storeLuminanceShader:send("useFakeLuminance", fakeLuminance)
 	love.graphics.setCanvas(self.maxLuminanceCanvas)
 	love.graphics.clear(-1, 0, 0) -- NOTE: Gamma-correct rendering causes the canvas to NOT have a value of -1, but it is negative, and we only check for negativity in the shader
 	love.graphics.draw(self.lightCanvas)
 	-- Put log luminance into average luminance canvas
-	local logAverage = false
 	love.graphics.setShader(logAverage and self.logLuminanceShader or nil)
 	self.logLuminanceShader:send("delta", consts.luminanceLogDelta)
 	love.graphics.setCanvas(self.averageLuminanceCanvas)
