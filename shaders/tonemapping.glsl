@@ -39,7 +39,8 @@ vec3 tachy3(vec3 inColour, float maxLuminance) {
 	return inColour / maxLuminance;
 }
 
-vec3 finalMaybe(vec3 inColour, float maxLuminance, float averageLuminance) {
+// Supposedly reinhard
+vec3 reinhardAverage(vec3 inColour, float maxLuminance, float averageLuminance) {
 	float inColourLuminance = dot(inColour, vec3(0.2126, 0.7152, 0.0722));
 	float k = 1.0;
 	float lWhite = maxLuminance * maxLuminance;
@@ -73,6 +74,7 @@ vec4 effect(vec4 colour, sampler2D image, vec2 textureCoords, vec2 windowCoords)
 
 	// vec3 outColour = tachy2(inColour, maxLuminance, averageLuminance, 1.0, 0.5);
 	vec3 outColour = tachy3(inColour, maxLuminance);
+	// vec3 outColour = reinhardAverage(inColour, maxLuminance, averageLuminance);
 
 	return vec4(outColour, 1.0);
 }
