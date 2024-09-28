@@ -239,14 +239,14 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 	love.graphics.draw(self.HUDCanvas)
 	love.graphics.setCanvas()
 
-	local eyeData = self.eyeAdaptationCanvasB:newImageData()
-	local average = self.averageLuminanceCanvas:newImageData(nil, self.averageLuminanceCanvas:getMipmapCount()):getPixel(0, 0)
-	print(
-		"max: " .. self.maxLuminanceCanvas:newImageData(nil, self.maxLuminanceCanvas:getMipmapCount()):getPixel(0, 0) .. "\n" ..
-		"avg: " .. (logAverage and math.exp(average) - consts.luminanceLogDelta or average) .. "\n" ..
-		"eyeMax: " .. eyeData:getPixel(0, 0) .. "\n" ..
-		"eyeAvg: " .. (eyeData:getPixel(1, 0)) .. "\n"
-	)
+	-- local eyeData = self.eyeAdaptationCanvasB:newImageData()
+	-- local average = self.averageLuminanceCanvas:newImageData(nil, self.averageLuminanceCanvas:getMipmapCount()):getPixel(0, 0)
+	-- print(
+	-- 	"max: " .. self.maxLuminanceCanvas:newImageData(nil, self.maxLuminanceCanvas:getMipmapCount()):getPixel(0, 0) .. "\n" ..
+	-- 	"avg: " .. (logAverage and math.exp(average) - consts.luminanceLogDelta or average) .. "\n" ..
+	-- 	"eyeMax: " .. eyeData:getPixel(0, 0) .. "\n" ..
+	-- 	"eyeAvg: " .. (eyeData:getPixel(1, 0)) .. "\n"
+	-- )
 
 	-- Flip eye adaptation canvasses
 	self.eyeAdaptationCanvasA, self.eyeAdaptationCanvasB = self.eyeAdaptationCanvasB, self.eyeAdaptationCanvasA
