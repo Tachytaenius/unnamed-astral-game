@@ -4,5 +4,4 @@ return concord.component("starData", function(c, radiantFlux, luminousEfficacy, 
 	c.luminousEfficacy = luminousEfficacy
 	-- luminousFlux = radiantFlux * luminousEfficacy
 	c.colour = colour
-	-- TODO: Non-hardcoded sunspot data
 end)

@@ -75,6 +75,11 @@ function rendering:init()
 		love.filesystem.read("shaders/include/lights.glsl")
 	self.bodyShader = love.graphics.newShader(
 		lightsShaderCode ..
+		love.filesystem.read("shaders/include/colourSpaceConversion.glsl") ..
+		love.filesystem.read("shaders/include/lib/random.glsl") ..
+		love.filesystem.read("shaders/include/lib/dist.glsl") ..
+		love.filesystem.read("shaders/include/lib/worley.glsl") ..
+		love.filesystem.read("shaders/include/lib/simplex4d.glsl") ..
 		love.filesystem.read("shaders/body.glsl")
 	)
 	self.lineShader = love.graphics.newShader("shaders/line.glsl")

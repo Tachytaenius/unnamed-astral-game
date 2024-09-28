@@ -75,8 +75,7 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 		self.bodyShader:send("worldToModelNormal", {util.getInverseNormalMatrix(modelToWorld)})
 
 		-- Fix artifacting with raycasted spherical atmosphere interacting with icosphere body
-		-- self.bodyShader:send("spherise", true)
-		self.bodyShader:send("clipToSky", {mat4.components(clipToSky)}) -- This one worked
+		self.bodyShader:send("clipToSky", {mat4.components(clipToSky)})
 		self.bodyShader:send("cameraPosition", {vec3.components(camera.absolutePosition + positionOffset)})
 		self.bodyShader:send("cameraForwardVector", {vec3.components(vec3.rotate(consts.forwardVector, camera.orientation))})
 		self.bodyShader:send("nearDistance", consts.celestialNearPlaneDistance)
@@ -84,12 +83,31 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 		self.bodyShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.bodyShader:send("bodyRadius", body.celestialRadius.value)
 
-		local slot =
-			body.bodyTextureCubemapSlotClaim
-			and body.bodyTextureCubemapSlotClaim.slotEntity.bodyCubemapTextureSlot
-			or self.missingTextureSlot
-		self.bodyShader:send("baseColourTexture", slot.baseColour)
-		self.bodyShader:send("normalTexture", slot.normal)
+		self.bodyShader:send("isStar", not not body.starData)
+		self.bodyShader:send("time", self:getWorld().state.time)
+		if not body.starData then
+			local slot =
+				body.bodyTextureCubemapSlotClaim
+				and body.bodyTextureCubemapSlotClaim.slotEntity.bodyCubemapTextureSlot
+				or self.missingTextureSlot
+			self.bodyShader:send("baseColourTexture", slot.baseColour)
+			self.bodyShader:send("normalTexture", slot.normal)
+		else
+			self.bodyShader:sendColor("starColour", body.starData.colour)
+			self.bodyShader:send("starLuminousFlux", body.starData.radiantFlux * body.starData.luminousEfficacy)
+
+			-- self.bodyShader:send("simplexTimeRate", 0.5)
+			-- self.bodyShader:send("simplexFrequency", 12)
+			-- -- self.bodyShader:send("simplexColourHueShift", 0.1)
+			-- -- self.bodyShader:send("simplexColourSaturationAdd", 0.5)
+			-- -- self.bodyShader:send("simplexColourValueMultiplier", 0.25)
+			-- self.bodyShader:sendColor("simplexColour", body.starData.sunspotColour)
+			-- self.bodyShader:send("simplexPower", 4)
+			-- self.bodyShader:send("simplexEffect", 1)
+
+			-- self.bodyShader:send("worleyFrequency", 4)
+			-- self.bodyShader:send("worleyEffect", 0.6)
+		end
 
 		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, true)
 		self:sendShadowSpheres(self.bodyShader, shadowSpheres, positionOffset)
