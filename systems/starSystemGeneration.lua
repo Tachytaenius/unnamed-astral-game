@@ -109,13 +109,14 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 			-- So: inputting the sun's mass and luminous efficacy gets you the sun's luminous flux. Which is what we want.
 			local colour = {1, 1, 1}
 			body:give("starData", radiantFlux, luminousEfficacy, colour)
-			-- body:give("atmosphere",
-			-- 	radius * util.randomRange(1.2, 1.4),
-			-- 	{1, 1, 1},
-			-- 	util.randomRange(0.25, 1),
-			-- 	luminousFlux * util.randomRange(0.25, 0.5),
-			-- 	util.randomRange(0.5, 2)
-			-- )
+			local surfaceLuminance = luminousFlux * radius ^ -2 / consts.tau -- a best guess but at least it has luminance units lol
+			body:give("atmosphere",
+				radius * util.randomRange(1.2, 1.4),
+				{1, 1, 1},
+				1e-9 * util.randomRange(0.25, 1),
+				surfaceLuminance * util.randomRange(0.25, 0.5),
+				util.randomRange(0.5, 2)
+			)
 		elseif bodyType == "rocky" then
 			mass = parent.celestialMass.value * 10 ^ util.randomRange(-7.5, -4.5)
 			local thisDensity = parentDensity * util.randomRange(0.75, 1.25) * (
