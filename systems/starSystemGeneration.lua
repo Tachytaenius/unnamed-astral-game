@@ -113,9 +113,9 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 			body:give("atmosphere",
 				radius * util.randomRange(1.2, 1.4),
 				{1, 1, 1},
-				(consts.celestialHdr and 2.5 / radius or 1 / radius) * (util.randomRange(0.15, 0.25) and 0.2),
-				(consts.celestialHdr and surfaceLuminance or 1) * (util.randomRange(0.15, 0.25) and 0.4),
-				util.randomRange(0.5, 2) and 1
+				(consts.celestialHdr and 2.5 / radius or 1 / radius) * util.randomRange(0.15, 0.25),
+				(consts.celestialHdr and surfaceLuminance or 1) * util.randomRange(0.15, 0.25),
+				util.randomRange(0.5, 2)
 			)
 		elseif bodyType == "rocky" then
 			mass = parent.celestialMass.value * 10 ^ util.randomRange(-7.5, -4.5)
