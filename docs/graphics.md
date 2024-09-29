@@ -1,0 +1,1 @@
+For light, eye adaptation, etc, lots of different things were tried out and scrapped and simplified. The code for it all will have lots of unused things. In the end I just scrapped the realistic light ranges entirely.

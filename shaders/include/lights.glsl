@@ -111,3 +111,35 @@ vec3 getLightAtPointNormal(vec3 pointPosition, vec3 pointNormal) {
 	}
 	return ret;
 }
+
+// For non-HDR
+vec3 getAverageFormShadowAndColourAtPointNormal(vec3 pointPosition, vec3 pointNormal) {
+	vec3 preDivide = vec3(0.0);
+		float total = 0.0;
+		for (int i = 0; i < lightCount; i++) {
+			Light light = lights[i];
+			if (shadowCast(light, pointPosition)) {
+				continue;
+			}
+			vec3 lightDirection = normalize(light.position - pointPosition);
+			float value = max(0.0, dot(lightDirection, pointNormal));
+			preDivide += value * light.colour;
+			total++;
+		}
+		return total > 0.0 ? preDivide / total : vec3(0.0);
+}
+
+// For non-HDR
+vec3 getAverageLightColourAtPoint(vec3 pointPosition) {
+	vec3 preDivide = vec3(0.0);
+	float total = 0.0;
+	for (int i = 0; i < lightCount; i++) {
+		Light light = lights[i];
+		if (shadowCast(light, pointPosition)) {
+			continue;
+		}
+		preDivide += light.colour;
+		total++;
+	}
+	return total > 0.0 ? preDivide / total : vec3(0.0);
+}

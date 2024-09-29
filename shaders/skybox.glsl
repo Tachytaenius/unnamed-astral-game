@@ -6,8 +6,15 @@
 
 uniform samplerCube skybox;
 
+uniform bool nonHdr;
+uniform float nonHdrBrightnessMultiplier;
+
 vec4 effect(vec4 colour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
-	return Texel(skybox, normalize(directionPreNormalise));
+	vec4 sample = Texel(skybox, normalize(directionPreNormalise));
+	if (nonHdr) {
+		sample.rgb *= nonHdrBrightnessMultiplier;
+	}
+	return sample;
 }
 
 #endif

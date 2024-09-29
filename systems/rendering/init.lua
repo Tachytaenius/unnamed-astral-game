@@ -129,6 +129,12 @@ function rendering:init()
 	)
 	self.skybox = love.graphics.newCanvas(consts.skyboxCubemapSideLength, consts.skyboxCubemapSideLength, {type = "cube", format = "rgba32f", linear = true})
 	util.drawGalaxyToSkybox(self.skybox, self:getWorld().state.galaxy)
+	for i = 1, 2 do
+		local name = "coronaReductionTexture" .. i
+		self[name] = love.graphics.newCanvas(consts.coronaReductionTextureSideLength, consts.coronaReductionTextureSideLength, {type = "cube", format = "r8", linear = true})
+		util.drawCoronaReductionTexture(self[name], i)
+		self[name]:setFilter("linear")
+	end
 end
 
 function rendering:draw(outputCanvas, dt)

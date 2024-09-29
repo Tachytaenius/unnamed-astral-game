@@ -64,6 +64,7 @@ graphics.missingTextureColourA = {1, 0, 1}
 graphics.missingTextureColourB = {0, 0, 0}
 
 graphics.skyboxCubemapSideLength = 2048
+graphics.coronaReductionTextureSideLength = 512
 
 graphics.pointLightBlurAngularRadius = 0.005
 graphics.blurredPointDiskMeshVertices = 8
@@ -75,5 +76,7 @@ graphics.luminanceLogDelta = 0.001
 -- For two different approaches to eye adaptation
 graphics.eyeAdaptationSmoothing = 0.01 -- Framerate-independent lerp through "base 2 orders of magnitude"
 graphics.eyeAdaptationMoveRate = 5 -- Moving linearly through "base 2 orders of magnitude"
+
+graphics.celestialHdr = false -- All that work...!
 
 return graphics

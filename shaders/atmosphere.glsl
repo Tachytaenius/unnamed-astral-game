@@ -16,6 +16,14 @@ uniform float atmosphereRadius;
 uniform float atmosphereDensity;
 uniform float atmosphereEmissiveness;
 
+uniform bool fullLightingCalculation;
+
+uniform bool starCorona;
+uniform samplerCube coronaReductionTexture1;
+uniform samplerCube coronaReductionTexture2;
+uniform mat3 coronaReductionMatrix1;
+uniform mat3 coronaReductionMatrix2;
+
 vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
 	vec3 direction = normalize(directionPreNormalise);
 
@@ -58,13 +66,27 @@ vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoo
 		vec3 samplePosition = cameraPosition + direction * t;
 		vec3 difference = samplePosition - bodyPosition;
 		float altitude = length(difference) - bodyRadius;
+		float reductionMultiplier;
+		if (!starCorona) {
+			reductionMultiplier = 1.0;
+		} else {
+			reductionMultiplier = 1.0 - (
+				0.2 * Texel(coronaReductionTexture1, coronaReductionMatrix1 * difference).r +
+				0.1 * Texel(coronaReductionTexture2, coronaReductionMatrix2 * difference).r
+			);
+		}
 		float densityMultiplier = pow(
-			clamp(1.0 - altitude / (atmosphereRadius - bodyRadius), 0.0, 1.0),
+			clamp(1.0 - altitude / (reductionMultiplier * (atmosphereRadius - bodyRadius)), 0.0, 1.0),
 			densityPower
 		);
 		// TODO: Work out units here and just reorganise this a bit
 		vec3 sampleBaseColour = loveColour.rgb * atmosphereDensity * densityMultiplier;
-		vec3 incomingLight = getLightAtPoint(samplePosition);
+		vec3 incomingLight;
+		if (fullLightingCalculation) {
+			incomingLight = getLightAtPoint(samplePosition);
+		} else {
+			incomingLight = getAverageLightColourAtPoint(samplePosition);
+		}
 		vec3 sample = sampleBaseColour * (incomingLight + atmosphereEmissiveness);
 		outColour += sample * stepSize;
 	}
