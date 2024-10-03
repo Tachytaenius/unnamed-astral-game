@@ -51,7 +51,7 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 	self.skyboxShader:send("clipToSky", {mat4.components(clipToSky)})
 	self.skyboxShader:send("skybox", self.skybox)
 	self.skyboxShader:send("nonHdr", not consts.celestialHdr)
-	self.skyboxShader:send("nonHdrBrightnessMultiplier", 1e4)
+	self.skyboxShader:send("nonHdrBrightnessMultiplier", consts.pointLuminanceToRGBNonHDR)
 	love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
 
 	-- Draw bodies to light canvas, with depth and position information

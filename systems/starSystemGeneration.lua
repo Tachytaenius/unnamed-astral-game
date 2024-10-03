@@ -37,7 +37,7 @@ local function planetProbabilityWeightCurve(
 	end
 end
 
-local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObjects)
+local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 	local numBodies
 	if not parent then
 		numBodies = 1
@@ -47,7 +47,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		local length = 8
 		local distanceLimitingFactor = depth > 1 and math.min(math.max(ownI - start, 0) / length, 1) or 1 -- Limit number of children based on proximity to parent
 		local maxBodies = math.floor(distanceLimitingFactor * 12 / depth ^ 1.25)
-		numBodies = love.math.random(0, maxBodies)
+		numBodies = math.max(info.minSatellites, love.math.random(0, maxBodies))
 	end
 
 	for i = 1, numBodies do
@@ -61,7 +61,7 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 			parent.satellites.value[#parent.satellites.value + 1] = body
 
 			-- Kepler orbital elements
-			local semiMajorAxis = curveInfo.baseDistance * curveInfo.base ^ i -- Important that i starts from 1
+			local semiMajorAxis = info.baseDistance * info.base ^ i -- Important that i starts from 1
 			local eccentricity = util.randomRange(0, 0.05)
 			local argumentOfPeriapsis = util.randomRange(0, consts.tau)
 			local initialMeanAnomaly = util.randomRange(0, consts.tau)
@@ -261,11 +261,13 @@ local function generateSystem(parent, curveInfo, depth, ownI, state, graphicsObj
 		body:give("satellites")
 		state.ecs:addEntity(body)
 		if depth < 2 then
-			local newCurveInfo = {
+			local newInfo = {
 				baseDistance = body.celestialRadius.value * util.randomRange(50, 100),
-				base = util.randomRange(1.9, 2.5)
+				base = util.randomRange(1.9, 2.5),
+				-- minSatellites = depth == 0 and 2 or 0
+				minSatellites = 0
 			}
-			generateSystem(body, newCurveInfo, depth + 1, i, state, graphicsObjects)
+			generateSystem(body, newInfo, depth + 1, i, state, graphicsObjects)
 		end
 	end
 end

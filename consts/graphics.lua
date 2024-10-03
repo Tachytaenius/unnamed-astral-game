@@ -69,6 +69,7 @@ graphics.coronaReductionTextureSideLength = 512
 graphics.pointLightBlurAngularRadius = 0.005
 graphics.blurredPointDiskMeshVertices = 8
 graphics.blurredPointVertexFadePower = 5
+graphics.pointLuminanceToRGBNonHDR = 1e4
 
 graphics.galaxyRaySteps = 20
 
