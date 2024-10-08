@@ -207,6 +207,28 @@ return function(body, seed, graphicsObjects)
 		end
 
 		return baseColour, heightmap
+	elseif body.celestialBody.type == "gaseous" then
+		local function baseColour(orientation)
+			randomGenerator:setState(randomStartState)
+			local worldToCamera = mat4.camera(vec3(), orientation) -- No camera position in the first place
+			local worldToClip = cameraToClip * worldToCamera
+			local clipToSky = mat4.inverse(worldToClip)
+
+			love.graphics.setShader(gfx.gaseousBaseShader)
+			gfx.gaseousBaseShader:send("colourStepCount", #body.celestialBodySurface.colours)
+			-- for i, v in ipairs(body.celestialBodySurface.colours) do
+			-- 	gfx.gaseousBaseShader:send("colourSteps[" .. i - 1 .. "]", v)
+			-- end
+			gfx.gaseousBaseShader:send("colourSteps", unpack(body.celestialBodySurface.colours))
+			sendSky(clipToSky)
+			drawDummy()
+		end
+
+		local function heightmap(orientation)
+
+		end
+
+		return baseColour, heightmap
 	else
 		local function baseColour(orientation)
 

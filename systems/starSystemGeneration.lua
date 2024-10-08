@@ -234,12 +234,24 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 				feature.heightMultiplierNoiseAmplitude = util.randomRange(0, 0.5)
 				features[#features + 1] = feature
 			end
-			body:give("celestialBodySurface", {primaryColour, secondaryColour}, features)
+			body:give("celestialBodySurface", {colourationType = "primarySecondary", primaryColour, secondaryColour}, features)
 		elseif bodyType == "gaseous" then
 			mass = parent.celestialMass.value * 10 ^ util.randomRange(-4.5, -3)
 			local thisDensity = parentDensity * util.randomRange(0.75, 1.25) 
 			local thisVolume = mass / thisDensity
 			radius = (thisVolume / (2 / 3 * consts.tau)) ^ (1 / 3)
+
+			local colourBandCount = math.min(consts.maxGaseousBodyColourSteps, util.randomRange(8, 16))
+			local bands = {colourationType = "banding"}
+			for i = 1, colourBandCount do
+				bands[i] = {
+					love.math.random(),
+					love.math.random(),
+					love.math.random()
+				}
+			end
+			local features = {}
+			body:give("celestialBodySurface", bands, features)
 		end
 		if not body.celestialBodySurface then
 			body:give("celestialBodySurface", {{1, 1, 1}, {0.5, 0.5, 0.5}}, {}) -- TEMP
@@ -280,6 +292,12 @@ function starSystemGeneration:init()
 		love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/include/colourSpaceConversion.glsl") ..
 		love.filesystem.read("shaders/planetTexturing/base.glsl")
+	)
+	self.graphicsObjects.gaseousBaseShader = love.graphics.newShader(
+		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
+		love.filesystem.read("shaders/include/skyDirection.glsl") ..
+		"const int maxColourSteps = " .. consts.maxGaseousBodyColourSteps .. ";\n" ..
+		love.filesystem.read("shaders/planetTexturing/gaseousBase.glsl")
 	)
 	self.graphicsObjects.noiseShader = love.graphics.newShader(
 		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..

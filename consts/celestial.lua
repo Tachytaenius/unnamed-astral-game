@@ -22,4 +22,6 @@ celestial.galaxyHaloProportion = 0.1
 celestial.galaxyOtherStarCount = 1000000
 celestial.galaxyDustSampleBrightnessMultiplier = 0.4e-5 -- stars made around the order of magnitude -5 in max luminance
 
+celestial.maxGaseousBodyColourSteps = 32
+
 return celestial
