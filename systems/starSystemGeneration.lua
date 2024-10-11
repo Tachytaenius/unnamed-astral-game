@@ -243,12 +243,30 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 
 			local colourBandCount = math.min(consts.maxGaseousBodyColourSteps, util.randomRange(8, 16))
 			local bands = {colourationType = "banding"}
+			bands.baseColour = {
+				love.math.random(),
+				love.math.random(),
+				love.math.random()
+			}
+			local colourRandomisation = util.randomRange(0.05, 0.2)
+			local currentStart = 0
 			for i = 1, colourBandCount do
+				assert(currentStart < 1, "Gaseous planet colour band starts on or \"beyond\" the pole")
+				local colour = {}
+				for i, v in ipairs(bands.baseColour) do
+					colour[i] = math.max(0, math.min(1,
+						v + colourRandomisation * (love.math.random() - 0.5)
+					))
+				end
 				bands[i] = {
-					love.math.random(),
-					love.math.random(),
-					love.math.random()
+					start = currentStart,
+					colour = colour
 				}
+				-- currentStart = currentStart + (1 - currentStart) / (love.math.random() * 2 + 1)
+				local widthVariationMultiplier = 0.8 -- A margin below 1 is good. Ensures starts only increase and also gives room for blending
+				local newStart = i / colourBandCount + (love.math.random() - 0.5) * widthVariationMultiplier * (1 / colourBandCount)
+				assert(currentStart < newStart, "Gaseous planet colour banding start went the wrong direction compared to previous")
+				currentStart = newStart
 			end
 			local features = {}
 			body:give("celestialBodySurface", bands, features)

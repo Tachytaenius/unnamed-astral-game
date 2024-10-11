@@ -215,11 +215,14 @@ return function(body, seed, graphicsObjects)
 			local clipToSky = mat4.inverse(worldToClip)
 
 			love.graphics.setShader(gfx.gaseousBaseShader)
-			gfx.gaseousBaseShader:send("colourStepCount", #body.celestialBodySurface.colours)
-			-- for i, v in ipairs(body.celestialBodySurface.colours) do
-			-- 	gfx.gaseousBaseShader:send("colourSteps[" .. i - 1 .. "]", v)
-			-- end
-			gfx.gaseousBaseShader:send("colourSteps", unpack(body.celestialBodySurface.colours))
+			local colourCount = #body.celestialBodySurface.colours
+			gfx.gaseousBaseShader:send("blendSize", 0.25 / colourCount)
+			gfx.gaseousBaseShader:send("colourStepCount", colourCount)
+			for i, step in ipairs(body.celestialBodySurface.colours) do
+				gfx.gaseousBaseShader:send("colourSteps[" .. i - 1 .. "].colour", step.colour)
+				gfx.gaseousBaseShader:send("colourSteps[" .. i - 1 .. "].start", step.start)
+			end
+			-- gfx.gaseousBaseShader:send("colourSteps", unpack(body.celestialBodySurface.colours))
 			sendSky(clipToSky)
 			drawDummy()
 		end
