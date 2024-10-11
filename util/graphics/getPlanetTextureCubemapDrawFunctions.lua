@@ -216,7 +216,9 @@ return function(body, seed, graphicsObjects)
 
 			love.graphics.setShader(gfx.gaseousBaseShader)
 			local colourCount = #body.celestialBodySurface.colours
-			gfx.gaseousBaseShader:send("blendSize", 0.25 / colourCount)
+			gfx.gaseousBaseShader:send("blendSize", (randomGenerator:random() * 0.05 + 0.2) / colourCount)
+			gfx.gaseousBaseShader:send("noiseAmplitude", randomGenerator:random() * 0.125)
+			gfx.gaseousBaseShader:send("noiseFrequency", randomGenerator:random() * 2.5 + 1)
 			gfx.gaseousBaseShader:send("colourStepCount", colourCount)
 			for i, step in ipairs(body.celestialBodySurface.colours) do
 				gfx.gaseousBaseShader:send("colourSteps[" .. i - 1 .. "].colour", step.colour)

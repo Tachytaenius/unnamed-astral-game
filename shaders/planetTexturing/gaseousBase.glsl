@@ -17,12 +17,20 @@ uniform int colourStepCount;
 uniform ColourStep[maxColourSteps] colourSteps;
 
 uniform float blendSize;
+uniform float noiseAmplitude;
+uniform float noiseFrequency;
 
 vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
 	vec3 direction = normalize(directionPreNormalise);
+	float frequency = 4.0;
+	vec3 warping = noiseAmplitude * vec3(
+		snoise(direction * noiseFrequency),
+		snoise(direction * noiseFrequency + 100.0),
+		snoise(direction * noiseFrequency - 100.0)
+	);
+	vec3 directionWarped = normalize(direction + warping);
 
-	// float progress = direction.z * 0.5 + 0.5;
-	float progress = acos(clamp(direction.z, -1.0, 1.0)) / (tau / 2.0);
+	float progress = acos(clamp(directionWarped.z, -1.0, 1.0)) / (tau / 2.0);
 
 	// int stepIndex = int(floor(clamp(progress, 0.0, 1.0) * float(colourStepCount)));
 	// vec3 outColour = colourSteps[stepIndex];
