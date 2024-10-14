@@ -216,6 +216,7 @@ return function(body, seed, graphicsObjects)
 
 			love.graphics.setShader(gfx.gaseousBaseShader)
 			local colourCount = #body.celestialBodySurface.colours
+			gfx.gaseousBaseShader:send("rotationAxis", {vec3.components(body.celestialRotation.rotationAxis)})
 			gfx.gaseousBaseShader:send("blendSize", (randomGenerator:random() * 0.05 + 0.2) / colourCount)
 			gfx.gaseousBaseShader:send("noiseAmplitude", randomGenerator:random() * 0.125)
 			gfx.gaseousBaseShader:send("noiseFrequency", randomGenerator:random() * 2.5 + 1)

@@ -7,7 +7,8 @@ local assets = require("assets")
 local rendering = concord.system({
 	bodies = {"celestialBody"},
 	bodiesWithAtmospheres = {"celestialBody", "atmosphere"},
-	stars = {"celestialBody", "starData"}
+	stars = {"celestialBody", "starData"},
+	ringSystems = {"ringSystem"}
 })
 
 for _, moduleName in ipairs({
@@ -72,15 +73,22 @@ function rendering:init()
 		"#line 1\n" ..
 		"const int maxLights = " .. consts.maxLightsCelestial .. ";\n" ..
 		"const int maxSpheres = " .. consts.maxShadowSpheresCelestial .. ";\n" ..
+		"const int maxRings = " .. consts.maxShadowRingsCelestial .. ";\n" ..
 		love.filesystem.read("shaders/include/lights.glsl")
 	self.bodyShader = love.graphics.newShader(
+		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		lightsShaderCode ..
+		love.filesystem.read("shaders/include/lib/simplex4d.glsl") ..
 		love.filesystem.read("shaders/include/colourSpaceConversion.glsl") ..
 		love.filesystem.read("shaders/include/lib/random.glsl") ..
 		love.filesystem.read("shaders/include/lib/dist.glsl") ..
 		love.filesystem.read("shaders/include/lib/worley.glsl") ..
-		love.filesystem.read("shaders/include/lib/simplex4d.glsl") ..
 		love.filesystem.read("shaders/body.glsl")
+	)
+	self.ringShader = love.graphics.newShader(
+		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
+		lightsShaderCode ..
+		love.filesystem.read("shaders/ring.glsl")
 	)
 	self.lineShader = love.graphics.newShader("shaders/line.glsl")
 	self.tonemappingShader = love.graphics.newShader(
@@ -88,6 +96,7 @@ function rendering:init()
 		love.filesystem.read("shaders/tonemapping.glsl")
 	)
 	self.atmosphereShader = love.graphics.newShader(
+		love.filesystem.read("shaders/include/lib/simplex3d.glsl") ..
 		lightsShaderCode ..
 		"#define FLIP_Y\n" .. love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/atmosphere.glsl")
@@ -105,6 +114,12 @@ function rendering:init()
 	-- Meshes
 	self.orbitLineMesh = util.generateCircleMesh(1024) -- TEMP: Not enough for distant orbits
 	self.bodyMesh = assets.misc.meshes.icosphereSmooth
+	self.ringMesh = assets.misc.meshes.plane
+	self.lineMesh = love.graphics.newMesh(consts.lineVertexFormat, {
+		{0, 0, 0, 1, 1, 1},
+		{0, 0, 0, 1, 1, 1},
+		{1, 1, 1, 1, 1, 1}
+	}, "triangles")
 
 	-- Misc
 	self.eyeAdaptationUninitialised = true

@@ -1,5 +1,7 @@
 #line 1
 
+// Modified for this project (to allow simplex3d and simplex4d to be included at the same time onto one shader)
+
 //
 // Description : Array and textureless GLSL 2D/3D/4D simplex 
 //               noise functions.
@@ -12,26 +14,26 @@
 //               https://github.com/stegu/webgl-noise
 // 
 
-vec4 mod289(vec4 x) {
+vec4 mod289_s4(vec4 x) {
   return x - floor(x * (1.0 / 289.0)) * 289.0; }
 
-float mod289(float x) {
+float mod289_s4(float x) {
   return x - floor(x * (1.0 / 289.0)) * 289.0; }
 
-vec4 permute(vec4 x) {
-     return mod289(((x*34.0)+10.0)*x);
+vec4 permute_s4(vec4 x) {
+     return mod289_s4(((x*34.0)+10.0)*x);
 }
 
-float permute(float x) {
-     return mod289(((x*34.0)+10.0)*x);
+float permute_s4(float x) {
+     return mod289_s4(((x*34.0)+10.0)*x);
 }
 
-vec4 taylorInvSqrt(vec4 r)
+vec4 taylorInvSqrt_s4(vec4 r)
 {
   return 1.79284291400159 - 0.85373472095314 * r;
 }
 
-float taylorInvSqrt(float r)
+float taylorInvSqrt_s4(float r)
 {
   return 1.79284291400159 - 0.85373472095314 * r;
 }
@@ -94,9 +96,9 @@ float snoise(vec4 v)
   vec4 x4 = x0 + C.wwww;
 
 // Permutations
-  i = mod289(i); 
-  float j0 = permute( permute( permute( permute(i.w) + i.z) + i.y) + i.x);
-  vec4 j1 = permute( permute( permute( permute (
+  i = mod289_s4(i); 
+  float j0 = permute_s4( permute_s4( permute_s4( permute_s4(i.w) + i.z) + i.y) + i.x);
+  vec4 j1 = permute_s4( permute_s4( permute_s4( permute_s4 (
              i.w + vec4(i1.w, i2.w, i3.w, 1.0 ))
            + i.z + vec4(i1.z, i2.z, i3.z, 1.0 ))
            + i.y + vec4(i1.y, i2.y, i3.y, 1.0 ))
@@ -113,12 +115,12 @@ float snoise(vec4 v)
   vec4 p4 = grad4(j1.w, ip);
 
 // Normalise gradients
-  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+  vec4 norm = taylorInvSqrt_s4(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
   p0 *= norm.x;
   p1 *= norm.y;
   p2 *= norm.z;
   p3 *= norm.w;
-  p4 *= taylorInvSqrt(dot(p4,p4));
+  p4 *= taylorInvSqrt_s4(dot(p4,p4));
 
 // Mix contributions from the five corners
   vec3 m0 = max(0.6 - vec3(dot(x0,x0), dot(x1,x1), dot(x2,x2)), 0.0);

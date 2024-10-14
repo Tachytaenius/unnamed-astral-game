@@ -1,7 +1,9 @@
 #line 1
 
+// Requires include/lib/simplex3d.glsl concatenated
 // Requires const int maxLights defined
 // Requires const int maxSpheres defined
+// Requires const int maxRings defined
 
 const float tau = 6.28318530718;
 
@@ -11,6 +13,21 @@ struct ConvexRaycastResult {
 	float t2;
 };
 const ConvexRaycastResult convexRaycastMiss = ConvexRaycastResult (false, 0.0, 0.0);
+
+struct PlaneRaycastResult {
+	bool hit;
+	float t;
+};
+const PlaneRaycastResult planeRaycastMiss = PlaneRaycastResult (false, 0.0);
+
+PlaneRaycastResult planeRaycast(vec3 planeNormal, vec3 planeCentre, vec3 rayStart, vec3 rayDirection) {
+	float denom = dot(planeNormal, rayDirection);
+	if (denom != 0.0) {
+		float t = dot(planeCentre - rayStart, planeNormal / denom);
+		return PlaneRaycastResult (true, t);
+	}
+	return planeRaycastMiss;
+}
 
 ConvexRaycastResult sphereRaycast(vec3 spherePosition, float sphereRadius, vec3 rayStart, vec3 rayEnd) {
 	if (rayStart == rayEnd) {
@@ -59,22 +76,54 @@ struct Sphere {
 	float radius;
 };
 
+struct Ring {
+	vec3 planeNormal;
+	vec3 ringCentre;
+	float startDistance; // On the plane, from the centre
+	float endDistance;
+	float noiseCFrequency; // The noise that causes gaps
+	float discardThreshold; // How much gaps form
+};
+
 uniform int lightCount;
 uniform Light[maxLights] lights;
 
 uniform int sphereCount;
 uniform Sphere[maxSpheres] spheres;
 
+uniform int ringCount;
+uniform Ring[maxRings] rings;
+
 bool shadowCast(Light light, vec3 pointPosition) {
+	vec3 difference = light.position - pointPosition;
+	float dist = length(difference);
+	vec3 direction = difference / dist;
 	for (int j = 0; j < sphereCount; j++) {
 		Sphere sphere = spheres[j];
-		vec3 difference = light.position - pointPosition;
-		float dist = length(difference);
-		vec3 direction = difference / dist;
 		ConvexRaycastResult result = sphereRaycast2(sphere.position, sphere.radius, pointPosition, direction);
 		if (result.hit && result.t2 >= 0.0 && result.t1 <= dist) { // If the sun is sufficiently far away that float precision can't tell that a planet on the other side of the sun isn't creating a shadow, it might cast a shadow. But such faraway bodies shouldn't be part of the shadow spheres list
 			return true;
 		}
+	}
+	for (int j = 0; j < ringCount; j++) {
+		Ring ring = rings[j];
+		PlaneRaycastResult result = planeRaycast(ring.planeNormal, ring.ringCentre, pointPosition, direction);
+		if (!result.hit || result.t < 0.0 || result.t > dist) {
+			continue;
+		}
+		// The plane is in the way, is the ring that lies on it also in the way?
+		vec3 planePosition = pointPosition + direction * result.t;
+		float ringOutDistance = distance(planePosition, ring.ringCentre);
+		if (ringOutDistance < ring.startDistance || ringOutDistance > ring.endDistance) {
+			continue;
+		}
+		// Check for gaps with discard noise (make sure this code is consistent with the ring rendering in ring.glsl)
+		float progress = (ringOutDistance - ring.startDistance) / (ring.endDistance - ring.startDistance);
+		float noiseC = snoise(vec3(0.0, 0.0, progress * ring.noiseCFrequency)) * 0.5 + 0.5; // Might be a bit above 1 or below 0
+		if (min(1.0, noiseC) < ring.discardThreshold) { // min with 1 to ensure that it always discards if threshold is 1
+			continue; // Instead of discard!
+		}
+		return true;
 	}
 	return false;
 }

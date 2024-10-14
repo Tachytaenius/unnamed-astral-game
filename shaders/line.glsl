@@ -1,16 +1,22 @@
 varying vec3 fragmentPosition;
-varying vec3 fragmentColour;
-varying vec4 loveColour;
 
 #ifdef VERTEX
 
+uniform bool useStartAndOffset;
 uniform mat4 modelToWorld;
-uniform mat4 modelToClip;
+uniform vec3 lineStart;
+uniform vec3 lineOffset;
+
+uniform mat4 worldToClip;
 
 vec4 position(mat4 loveTransform, vec4 vertexPosition) {
-	loveColour = ConstantColor;
-	fragmentPosition = (modelToWorld * vertexPosition).xyz; // w should be 1 so no division needed
-	return modelToClip * vertexPosition;
+	if (useStartAndOffset) {
+		// In this case the intent is to be using the line mesh, which has 0,0,0 or 1,1,1 as its vertices
+		fragmentPosition = lineStart + lineOffset * vertexPosition.xyz;
+	} else {
+		fragmentPosition = (modelToWorld * vertexPosition).xyz; // w should be 1 so no division needed
+	}
+	return worldToClip * vec4(fragmentPosition, 1.0);
 }
 
 #endif

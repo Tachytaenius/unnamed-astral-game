@@ -4,8 +4,9 @@ local quat = mathsies.quat
 
 local graphics = {}
 
-graphics.maxLightsCelestial = 64
-graphics.maxShadowSpheresCelestial = 64
+graphics.maxLightsCelestial = 16
+graphics.maxShadowSpheresCelestial = 16
+graphics.maxShadowRingsCelestial = 16
 
 graphics.canvasSystemWidth = 480*2
 graphics.canvasSystemHeight = 270*2

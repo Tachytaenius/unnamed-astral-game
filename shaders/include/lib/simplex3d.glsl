@@ -1,5 +1,7 @@
 #line 1
 
+// Modified for this project (to allow simplex3d and simplex4d to be included at the same time onto one shader)
+
 //
 // Description : Array and textureless GLSL 2D/3D/4D simplex
 //               noise functions.
@@ -11,19 +13,19 @@
 //               https://github.com/ashima/webgl-noise
 //
 
-vec3 mod289(vec3 x) {
+vec3 mod289_s3(vec3 x) {
   return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
 
-vec4 mod289(vec4 x) {
+vec4 mod289_s3(vec4 x) {
   return x - floor(x * (1.0 / 289.0)) * 289.0;
 }
 
-vec4 permute(vec4 x) {
-     return mod289(((x*34.0)+1.0)*x);
+vec4 permute_s3(vec4 x) {
+     return mod289_s3(((x*34.0)+1.0)*x);
 }
 
-vec4 taylorInvSqrt(vec4 r)
+vec4 taylorInvSqrt_s3(vec4 r)
 {
   return 1.79284291400159 - 0.85373472095314 * r;
 }
@@ -52,8 +54,8 @@ float snoise(vec3 v)
   vec3 x3 = x0 - D.yyy;      // -1.0+3.0*C.x = -0.5 = -D.y
 
 // Permutations
-  i = mod289(i);
-  vec4 p = permute( permute( permute(
+  i = mod289_s3(i);
+  vec4 p = permute_s3( permute_s3( permute_s3(
              i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
            + i.y + vec4(0.0, i1.y, i2.y, 1.0 ))
            + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
@@ -90,7 +92,7 @@ float snoise(vec3 v)
   vec3 p3 = vec3(a1.zw,h.w);
 
 //Normalise gradients
-  vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
+  vec4 norm = taylorInvSqrt_s3(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
   p0 *= norm.x;
   p1 *= norm.y;
   p2 *= norm.z;

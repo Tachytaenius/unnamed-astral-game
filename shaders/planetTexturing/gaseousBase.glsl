@@ -20,6 +20,8 @@ uniform float blendSize;
 uniform float noiseAmplitude;
 uniform float noiseFrequency;
 
+uniform vec3 rotationAxis;
+
 vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
 	vec3 direction = normalize(directionPreNormalise);
 	float frequency = 4.0;
@@ -30,7 +32,9 @@ vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoo
 	);
 	vec3 directionWarped = normalize(direction + warping);
 
-	float progress = acos(clamp(directionWarped.z, -1.0, 1.0)) / (tau / 2.0);
+	float dotResult = dot(directionWarped, rotationAxis * vec3(1.0, -1.0, 1.0)); // TODO: Why the y flip??
+	float dotResultClamped = clamp(dotResult, -1.0, 1.0);
+	float progress = acos(dotResultClamped) / (tau / 2.0);
 
 	// int stepIndex = int(floor(clamp(progress, 0.0, 1.0) * float(colourStepCount)));
 	// vec3 outColour = colourSteps[stepIndex];

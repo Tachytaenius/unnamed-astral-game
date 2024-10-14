@@ -34,6 +34,7 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 	local lights = self:getLights()
 	self:sendLights(self.bodyShader, lights, positionOffset)
 	self:sendLights(self.atmosphereShader, lights, positionOffset)
+	self:sendLights(self.ringShader, lights, positionOffset)
 
 	-- Clear canvasses
 	love.graphics.setCanvas({
@@ -54,7 +55,7 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 	self.skyboxShader:send("nonHdrBrightnessMultiplier", consts.pointLuminanceToRGBNonHDR)
 	love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
 
-	-- Draw bodies to light canvas, with depth and position information
+	-- Draw bodies to light canvas, with depth and position information, then draw rings
 	love.graphics.setCanvas({
 		self.lightCanvas,
 		self.positionCanvas,
@@ -112,10 +113,78 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 			-- self.bodyShader:send("worleyEffect", 0.6)
 		end
 
-		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, true)
-		self:sendShadowSpheres(self.bodyShader, shadowSpheres, positionOffset)
+		local shadowObjects = body.starData and {} or self:getShadowObjects(body, true, nil)
+		self:sendShadowObjects(self.bodyShader, shadowObjects, positionOffset)
 
 		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
+
+		-- Debug rotation axis
+		-- love.graphics.push("all")
+		-- love.graphics.setWireframe(true)
+		-- love.graphics.setShader(self.lineShader)
+		-- self.lineShader:send("useStartAndOffset", true)
+		-- self.lineShader:send("lineStart", {vec3.components(body.celestialMotionState.position + positionOffset)})
+		-- local lineVector = body.celestialRotation.rotationAxis * body.celestialRadius.value * 1.5
+		-- self.lineShader:send("worldToClip", {mat4.components(worldToClip)})
+		-- -- Rotation axis
+		-- self.lineShader:send("lineOffset", {vec3.components(lineVector)})
+		-- love.graphics.setColor(0, 0, 1)
+		-- love.graphics.draw(self.lineMesh)
+		-- -- Negative rotation axis
+		-- self.lineShader:send("lineOffset", {vec3.components(-lineVector)})
+		-- love.graphics.setColor(1, 1, 0)
+		-- love.graphics.draw(self.lineMesh)
+		-- -- Forward vector
+		-- self.lineShader:send("lineOffset", {vec3.components(consts.forwardVector * body.celestialRadius.value * 1.25)})
+		-- love.graphics.setColor(1, 0, 0)
+		-- love.graphics.draw(self.lineMesh)
+		-- -- Negative forward vector
+		-- self.lineShader:send("lineOffset", {vec3.components(-consts.forwardVector * body.celestialRadius.value * 1.25)})
+		-- love.graphics.setColor(0, 1, 1)
+		-- love.graphics.draw(self.lineMesh)
+		-- love.graphics.pop()
+	end
+	love.graphics.setShader(self.ringShader)
+	for _, ringEntity in ipairs(self.ringSystems) do
+		local ring = ringEntity.ringSystem
+		local parent = ring.parent
+
+		-- Align to equatorial plane of planet (i read equatorial bulge migrates rings towards equator over time)
+		local rotationAxis = parent.celestialRotation.rotationAxis
+		local axis, angle = util.axisAngleBetweenDirections(consts.forwardVector, rotationAxis)
+		local orientation
+		if not axis then
+			orientation = quat()
+		else
+			orientation = quat.fromAxisAngle(axis * angle)
+		end
+
+		local modelToWorld = mat4.transform(
+			parent.celestialMotionState.position + positionOffset,
+			orientation,
+			ring.startDistance + ring.size -- Ring furthest distance
+		)
+		local modelToClip = worldToClip * modelToWorld
+
+		self.ringShader:send("modelToWorld", {mat4.components(modelToWorld)})
+		self.ringShader:send("modelToClip", {mat4.components(modelToClip)})
+		-- self.ringShader:send("modelToWorldNormal", {util.getNormalMatrix(modelToWorld)})
+		self.ringShader:send("ringCentre", {vec3.components(parent.celestialMotionState.position + positionOffset)})
+		self.ringShader:send("startDistance", ring.startDistance)
+		self.ringShader:send("endDistance", ring.startDistance + ring.size)
+
+		self.ringShader:send("colours", unpack(ring.colours))
+		self.ringShader:send("noiseAFrequency", ring.noiseAFrequency)
+		self.ringShader:send("noiseBFrequency", ring.noiseBFrequency)
+		self.ringShader:send("noiseCFrequency", ring.noiseCFrequency)
+		self.ringShader:send("discardThreshold", ring.discardThreshold)
+
+		-- self.ringShader:send("cameraPosition", {vec3.components(camera.absolutePosition + positionOffset)})
+
+		local shadowObjects = self:getShadowObjects(parent, false, ringEntity)
+		self:sendShadowObjects(self.ringShader, shadowObjects, positionOffset)
+
+		love.graphics.draw(self.ringMesh)
 	end
 
 	-- Draw orbit lines to light canvas, with depth and position information. Their pixels have a negative alpha to indicate that they are absolute colours that should skip tonemapping
@@ -124,6 +193,7 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 		love.graphics.setShader(self.lineShader)
 		love.graphics.setColor(consts.orbitLineColour)
 		self.lineShader:send("negativeAlpha", consts.celestialHdr)
+		self.lineShader:send("useStartAndOffset", false)
 		love.graphics.setBlendMode("replace", "premultiplied")
 		love.graphics.setMeshCullMode("none")
 		love.graphics.setWireframe(true)
@@ -136,9 +206,8 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 					util.getOrbitalPlaneRotation(body) * quat.fromAxisAngle(consts.forwardVector * orbit.argumentOfPeriapsis),
 					vec3(orbit.semiMajorAxis, semiMinorAxis, 1)
 				)
-				local modelToClip = worldToClip * modelToWorld
 				self.lineShader:send("modelToWorld", {mat4.components(modelToWorld)})
-				self.lineShader:send("modelToClip", {mat4.components(modelToClip)})
+				self.lineShader:send("worldToClip", {mat4.components(worldToClip)})
 
 				love.graphics.draw(self.orbitLineMesh)
 			end
@@ -193,8 +262,8 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 				))
 			})
 		end
-		local shadowSpheres = body.starData and {} or self:getShadowSpheres(body, false)
-		self:sendShadowSpheres(self.atmosphereShader, shadowSpheres, positionOffset)
+		local shadowObjects = body.starData and {} or self:getShadowObjects(body, false)
+		self:sendShadowObjects(self.ringShader, shadowObjects, positionOffset)
 		love.graphics.setColor(atmosphere.colour)
 		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
 	end
@@ -324,14 +393,32 @@ function celestial:getLights()
 	return lights
 end
 
-function celestial:getShadowSpheres(body, ignoreCurrentBody)
-	-- Crops out bodies where you have to go up the tree and then down again
+function celestial:getShadowObjects(body, ignoreCurrentBody, ignoreRingEntity)
+	-- Crops out bodies and their rings where you have to go up the tree and then down again
 
-	-- ignoreCurrentBody is used when shading planet surfaces. Since they're spheres, lighting calculations using the normal will do the job of having a shadow anyway
+	-- ignoreCurrentBody (boolean) is used when shading planet surfaces. Since they're spheres, lighting calculations using the normal will do the job of having a shadow anyway
+	-- ignoreRingEntity is used when shading rings. It is the entity of the ring currently being shaded
 
 	local spheres = {}
+	local rings = {}
 
 	local function addBody(bodyToAdd)
+		if bodyToAdd.ringSystemsList then
+			for _, ringEntity in ipairs(bodyToAdd.ringSystemsList.value) do
+				if not ignoreRingEntity or ignoreRingEntity ~= ringEntity then
+					local ringSystem = ringEntity.ringSystem -- Component
+					local shadowRing = {}
+					shadowRing.planeNormal = bodyToAdd.celestialRotation.rotationAxis
+					shadowRing.planeCentre = bodyToAdd.celestialMotionState.position
+					shadowRing.startDistance = ringSystem.startDistance
+					shadowRing.endDistance = ringSystem.startDistance + ringSystem.size
+					shadowRing.noiseCFrequency = ringSystem.noiseCFrequency
+					shadowRing.discardThreshold = ringSystem.discardThreshold
+					rings[#rings + 1] = shadowRing
+				end
+			end
+		end
+
 		if bodyToAdd.starData or ignoreCurrentBody and bodyToAdd == body then
 			return
 		end
@@ -363,7 +450,7 @@ function celestial:getShadowSpheres(body, ignoreCurrentBody)
 	recurseDown(body)
 	recurseUp(body)
 
-	return spheres
+	return {spheres = spheres, rings = rings}
 end
 
 function celestial:sendLights(shader, lights, offset)
@@ -378,14 +465,30 @@ function celestial:sendLights(shader, lights, offset)
 	end
 end
 
-function celestial:sendShadowSpheres(shader, spheres, offset)
+function celestial:sendShadowObjects(shader, objects, offset)
+	local spheres, rings = objects.spheres or {}, objects.rings or {}
+
 	assert(#spheres <= consts.maxShadowSpheresCelestial, "Too many shadow spheres (" .. #spheres .. "), should be no more than " .. consts.maxShadowSpheresCelestial)
+	assert(#rings <= consts.maxShadowRingsCelestial, "Too many shadow rings (" .. #rings .. "), should be no more than " .. consts.maxShadowRingsCelestial)
+
 	shader:send("sphereCount", #spheres)
 	for i, sphere in ipairs(spheres) do
 		local glslI = i - 1
 		local prefix = "spheres[" .. glslI .. "]."
 		shader:send(prefix .. "position", {vec3.components(sphere.position + offset)})
 		shader:send(prefix .. "radius", sphere.radius)
+	end
+
+	shader:send("ringCount", #rings)
+	for i, ring in ipairs(rings) do
+		local glslI = i - 1
+		local prefix = "rings[" .. glslI .. "]."
+		shader:send(prefix .. "planeNormal", {vec3.components(ring.planeNormal)})
+		shader:send(prefix .. "ringCentre", {vec3.components(ring.planeCentre + offset)})
+		shader:send(prefix .. "startDistance", ring.startDistance)
+		shader:send(prefix .. "endDistance", ring.endDistance)
+		shader:send(prefix .. "noiseCFrequency", ring.noiseCFrequency)
+		shader:send(prefix .. "discardThreshold", ring.discardThreshold)
 	end
 end
 
