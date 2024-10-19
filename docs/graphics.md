@@ -1,1 +1,1 @@
-For light, eye adaptation, etc, lots of different things were tried out and scrapped and simplified. The code for it all will have lots of unused things. In the end I just scrapped the realistic light ranges entirely.
+This project used to have an attempt at accurate photometric rendering with HDR. This more or less failed, and has been scrapped, but traces of it may remain.

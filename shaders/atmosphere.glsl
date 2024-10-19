@@ -5,18 +5,18 @@
 
 #ifdef PIXEL
 
-uniform sampler2D positionCanvas;
+uniform int stepsPerRay;
 uniform vec3 cameraPosition;
-uniform float rayStepCount;
+uniform sampler2D positionCanvas;
 
-uniform vec3 bodyPosition;
-uniform float bodyRadius;
-uniform float densityPower;
+uniform vec3 atmospherePosition;
 uniform float atmosphereRadius;
-uniform float atmosphereDensity;
-uniform float atmosphereEmissiveness;
-
-uniform bool fullLightingCalculation;
+uniform float baseScatterance;
+uniform float baseAbsorption;
+uniform float baseEmission;
+uniform vec3 atmosphereColour;
+uniform float atmosphereDensityPower;
+uniform float bodyRadius;
 
 uniform bool starCorona;
 uniform samplerCube coronaReductionTexture1;
@@ -27,44 +27,33 @@ uniform mat3 coronaReductionMatrix2;
 vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
 	vec3 direction = normalize(directionPreNormalise);
 
-	float objectDistance;
-	bool facingSky;
-	vec4 objectPostionTexel = Texel(positionCanvas, textureCoords);
-	if (objectPostionTexel.a > 0.0) {
-		objectDistance = distance(cameraPosition, objectPostionTexel.xyz);
-		facingSky = false;
-	} else {
-		facingSky = true;
-	}
-
-	vec3 outColour = vec3(0.0);
-
-	// Sphere raycast, but ray start to end is normalised (it's direction)
-	vec3 sphereToStart = cameraPosition - bodyPosition;
-	float b = 2.0 * dot(sphereToStart, direction);
-	float c = dot(sphereToStart, sphereToStart) - pow(atmosphereRadius, 2.0);
-	float h = pow(b, 2.0) - 4.0 * c;
-	if (h < 0.0) {
+	ConvexRaycastResult result = sphereRaycast(atmospherePosition, atmosphereRadius, cameraPosition, direction);
+	if (!result.hit) {
 		discard;
 	}
-	float t1 = (-b - sqrt(h)) / 2.0;
-	float t2 = (-b + sqrt(h)) / 2.0;
+	float t1 = result.t1;
+	float t2 = result.t2;
 	if (t2 <= 0.0) {
 		discard;
 	}
 	t1 = max(t1, 0.0);
-	if (!facingSky) {
+	vec4 objectPostionTexel = Texel(positionCanvas, textureCoords);
+	if (objectPostionTexel.a > 0.0) {
+		float objectDistance = distance(cameraPosition, objectPostionTexel.xyz);
 		t2 = min(t2, objectDistance);
 	}
 	if (t2 <= t1) {
 		discard;
 	}
 
-	float stepSize = (t2 - t1) / rayStepCount; // direction's length is 1
-	for (float i = 0.0; i < rayStepCount; i++) {
-		float t = mix(t1, t2, i / rayStepCount);
+	vec3 totalIncomingLight = vec3(0.0);
+	float totalTransmittance = 1.0;
+	for (int i = stepsPerRay - 1; i >= 0; i--) {
+		float stepSize = (t2 - t1) / float(stepsPerRay);
+		float t = mix(t1, t2, float(i) / float(stepsPerRay));
 		vec3 samplePosition = cameraPosition + direction * t;
-		vec3 difference = samplePosition - bodyPosition;
+
+		vec3 difference = samplePosition - atmospherePosition;
 		float altitude = length(difference) - bodyRadius;
 		float reductionMultiplier;
 		if (!starCorona) {
@@ -75,23 +64,25 @@ vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoo
 				0.1 * Texel(coronaReductionTexture2, coronaReductionMatrix2 * difference).r
 			);
 		}
-		float densityMultiplier = pow(
+		float density = pow(
 			clamp(1.0 - altitude / (reductionMultiplier * (atmosphereRadius - bodyRadius)), 0.0, 1.0),
-			densityPower
+			atmosphereDensityPower
 		);
-		// TODO: Work out units here and just reorganise this a bit
-		vec3 sampleBaseColour = loveColour.rgb * atmosphereDensity * densityMultiplier;
-		vec3 incomingLight;
-		if (fullLightingCalculation) {
-			incomingLight = getLightAtPoint(samplePosition);
-		} else {
-			incomingLight = getAverageLightColourAtPoint(samplePosition);
-		}
-		vec3 sample = sampleBaseColour * (incomingLight + atmosphereEmissiveness);
-		outColour += sample * stepSize;
+
+		float absorption = baseAbsorption * density;
+		float scatterance = baseScatterance * density; // In-scattering is not accounted for
+		float emission = baseEmission * density;
+		float extinction = absorption + scatterance;
+
+		float transmittanceThisStep = exp(-extinction * stepSize);
+		vec3 incomingLightThisStep = atmosphereColour * (stepSize * emission + stepSize * scatterance * getAverageLightColourAtPoint(samplePosition));
+
+		totalIncomingLight *= transmittanceThisStep;
+		totalIncomingLight += incomingLightThisStep;
+		totalTransmittance *= transmittanceThisStep;
 	}
 
-	return vec4(outColour, 1.0);
+	return vec4(totalIncomingLight, 1.0 - totalTransmittance);
 }
 
 #endif

@@ -68,7 +68,6 @@ ConvexRaycastResult sphereRaycast2(vec3 spherePosition, float sphereRadius, vec3
 struct Light {
 	vec3 position;
 	vec3 colour;
-	float luminousFlux;
 };
 
 struct Sphere {
@@ -128,40 +127,6 @@ bool shadowCast(Light light, vec3 pointPosition) {
 	return false;
 }
 
-// NOTE: These are probably wrong, but radiometry/photometry is extremely hard to learn since the resources online don't answer my questions
-
-vec3 getLightAtPoint(vec3 pointPosition) {
-	vec3 ret = vec3(0.0);
-	for (int i = 0; i < lightCount; i++) {
-		Light light = lights[i];
-		if (shadowCast(light, pointPosition)) {
-			continue;
-		}
-		vec3 difference = pointPosition - light.position;
-		float luminousIntensity = light.luminousFlux / (2 * tau);
-		float brightness = luminousIntensity / dot(difference, difference); // Inverse square law
-		ret += brightness * light.colour;
-	}
-	return ret;
-}
-
-vec3 getLightAtPointNormal(vec3 pointPosition, vec3 pointNormal) {
-	vec3 ret = vec3(0.0);
-	for (int i = 0; i < lightCount; i++) {
-		Light light = lights[i];
-		if (shadowCast(light, pointPosition)) {
-			continue;
-		}
-		vec3 difference = pointPosition - light.position;
-		float luminousIntensity = light.luminousFlux / (2 * tau);
-		float brightness = luminousIntensity / dot(difference, difference); // Inverse square law
-		brightness *= max(0.0, dot(-normalize(difference), pointNormal));
-		ret += brightness * light.colour;
-	}
-	return ret;
-}
-
-// For non-HDR
 vec3 getAverageFormShadowAndColourAtPointNormal(vec3 pointPosition, vec3 pointNormal) {
 	vec3 preDivide = vec3(0.0);
 		float total = 0.0;
@@ -178,7 +143,6 @@ vec3 getAverageFormShadowAndColourAtPointNormal(vec3 pointPosition, vec3 pointNo
 		return total > 0.0 ? preDivide / total : vec3(0.0);
 }
 
-// For non-HDR
 vec3 getAverageLightColourAtPoint(vec3 pointPosition) {
 	vec3 preDivide = vec3(0.0);
 	float total = 0.0;

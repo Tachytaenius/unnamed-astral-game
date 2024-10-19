@@ -28,13 +28,10 @@ uniform samplerCube normalTexture;
 
 uniform float time;
 
-uniform bool fullLightingCalculation;
-
 // Star stuff
 
 uniform bool isStar;
 uniform vec3 starColour;
-uniform float starLuminousFlux;
 
 // uniform float simplexTimeRate;
 // uniform float simplexFrequency;
@@ -56,10 +53,6 @@ vec3 sampleStar(vec3 direction) {
 	// // simplexHsl.z *= simplexColourValueMultiplier;
 	// // vec3 simplexColour = hsl2rgb(simplexHsl);
 
-	float luminanceMultiplier = starLuminousFlux / (bodyRadius * bodyRadius) / tau; // This MIGHT be right? I don't know!! Tau because hemisphere solid angle...? *cries*
-	if (!fullLightingCalculation) {
-		luminanceMultiplier = 1.0;
-	}
 	// float worleyRaw = worley(direction * worleyFrequency);
 	// float worleyResult = 1.0 - worleyEffect * (1.0 - worleyRaw);
 	// float simplexResult = pow(clamp(snoise(vec4(direction * simplexFrequency, time * simplexTimeRate)) * 0.5 + 0.5, 0.0, 1.0), simplexPower);
@@ -68,17 +61,11 @@ vec3 sampleStar(vec3 direction) {
 	float noise = clamp(snoise(vec4(direction * 12.0, time * 0.2)) * 0.5 + 0.5, 0.0, 1.0);
 	noise = 1.0 - pow(noise, 2.0);
 	float noiseB = clamp(snoise(vec4(direction, time * 0.1) + 100.0) * 0.5 + 0.5, 0.0, 1.0);
-	if (fullLightingCalculation) {
-		// We have HDR
-		noise = mix(noise, 3.0, noiseB);
-		noise *= 2.0;
-	} else {
-		noise = pow(max(0.0,
-			mix(noise / 3.0, 1.0, noiseB)
-		), 0.8);
-	}
+	noise = pow(max(0.0,
+		mix(noise / 3.0, 1.0, noiseB)
+	), 0.8);
 
-	return luminanceMultiplier * starColour * noise;
+	return starColour * noise;
 }
 
 void effect() {
@@ -114,12 +101,7 @@ void effect() {
 		vec3 normal = normalize(modelToWorldNormal * normalMapSample);
 		// y flipping and gamma correction are like my recurring archnemeses that I fight once a season. during the final battle against y flipping im gonna get almost defeated and then come back thru the power of love and win, and gamma will be redeemed
 
-		vec3 totalLight;
-		if (fullLightingCalculation) {
-			totalLight = getLightAtPointNormal(raycastFragmentPosition, normal);
-		} else {
-			totalLight = getAverageFormShadowAndColourAtPointNormal(raycastFragmentPosition, normal);
-		}
+		vec3 totalLight = getAverageFormShadowAndColourAtPointNormal(raycastFragmentPosition, normal);
 
 		lightCanvasOutput = vec4(baseColour * totalLight, 1.0); // lightCanvas
 	} else {

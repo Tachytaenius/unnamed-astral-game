@@ -10,7 +10,7 @@ local util = require("util")
 
 local celestial = {}
 
-function celestial:renderCelestialCamera(outputCanvas, dt, entity)
+function celestial:renderCelestialCamera(outputCanvas, entity)
 	local camera = entity.celestialCamera
 	local drawTime = self:getWorld().state.lastTime
 	love.graphics.setMeshCullMode("none")
@@ -39,11 +39,10 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 	-- Clear canvasses
 	love.graphics.setCanvas({
 		self.lightCanvas,
-		self.atmosphereLightCanvas,
 		self.positionCanvas,
 		depthstencil = self.depthBuffer
 	})
-	love.graphics.clear({0, 0, 0, 1}, {0, 0, 0, 1}, {0, 0, 0, 0}, false, true)
+	love.graphics.clear({0, 0, 0, 1}, {0, 0, 0, 0}, false, true)
 
 	-- Draw skybox to light canvas, no depth or position
 	love.graphics.setDepthMode("always", false)
@@ -51,7 +50,6 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 	love.graphics.setShader(self.skyboxShader)
 	self.skyboxShader:send("clipToSky", {mat4.components(clipToSky)})
 	self.skyboxShader:send("skybox", self.skybox)
-	self.skyboxShader:send("nonHdr", not consts.celestialHdr)
 	self.skyboxShader:send("nonHdrBrightnessMultiplier", consts.pointLuminanceToRGBNonHDR)
 	love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
 
@@ -85,7 +83,6 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 		self.bodyShader:send("farDistance", consts.celestialFarPlaneDistance)
 		self.bodyShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.bodyShader:send("bodyRadius", body.celestialRadius.value)
-		self.bodyShader:send("fullLightingCalculation", consts.celestialHdr)
 
 		self.bodyShader:send("isStar", not not body.starData)
 		self.bodyShader:send("time", drawTime)
@@ -98,7 +95,7 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 			self.bodyShader:send("normalTexture", slot.normal)
 		else
 			self.bodyShader:sendColor("starColour", body.starData.colour)
-			self.bodyShader:send("starLuminousFlux", body.starData.radiantFlux * body.starData.luminousEfficacy)
+			-- self.bodyShader:send("starLuminousFlux", body.starData.radiantFlux * body.starData.luminousEfficacy)
 
 			-- self.bodyShader:send("simplexTimeRate", 0.5)
 			-- self.bodyShader:send("simplexFrequency", 12)
@@ -187,12 +184,11 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 		love.graphics.draw(self.ringMesh)
 	end
 
-	-- Draw orbit lines to light canvas, with depth and position information. Their pixels have a negative alpha to indicate that they are absolute colours that should skip tonemapping
 	-- The idea is that they are like (illusory) solids in space. Just superimposing them over atmosphere has an undesirable look
 	if settings.graphics.drawOrbitLines then
 		love.graphics.setShader(self.lineShader)
 		love.graphics.setColor(consts.orbitLineColour)
-		self.lineShader:send("negativeAlpha", consts.celestialHdr)
+		self.lineShader:send("negativeAlpha", false)
 		self.lineShader:send("useStartAndOffset", false)
 		love.graphics.setBlendMode("replace", "premultiplied")
 		love.graphics.setMeshCullMode("none")
@@ -218,23 +214,25 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 	end
 
 	-- Draw atmospheres to atmosphere light canvas, using position information but not writing to it
-	love.graphics.setCanvas(self.atmosphereLightCanvas)
+	love.graphics.setCanvas(self.lightCanvas)
 	love.graphics.setDepthMode("always", false)
-	love.graphics.setBlendMode("add")
+	love.graphics.setBlendMode("alpha", "alphamultiply")
+	love.graphics.setColorMask(true, true, true, false)
 	love.graphics.setShader(self.atmosphereShader)
 	self.atmosphereShader:send("positionCanvas", self.positionCanvas)
 	self.atmosphereShader:send("clipToSky", {mat4.components(clipToSky)})
 	self.atmosphereShader:send("cameraPosition", {vec3.components(camera.absolutePosition + positionOffset)})
-	self.atmosphereShader:send("rayStepCount", consts.atmosphereRayStepCount)
+	self.atmosphereShader:send("stepsPerRay", consts.atmosphereRayStepCount)
 	for _, body in ipairs(self.bodiesWithAtmospheres) do
 		local atmosphere = body.atmosphere
-		self.atmosphereShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
+		self.atmosphereShader:send("atmospherePosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.atmosphereShader:send("bodyRadius", body.celestialRadius.value)
-		self.atmosphereShader:send("densityPower", atmosphere.densityPower)
-		self.atmosphereShader:send("atmosphereEmissiveness", atmosphere.luminousFlux)
 		self.atmosphereShader:send("atmosphereRadius", body.celestialRadius.value + atmosphere.height)
-		self.atmosphereShader:send("atmosphereDensity", atmosphere.density)
-		self.atmosphereShader:send("fullLightingCalculation", consts.celestialHdr)
+		self.atmosphereShader:send("baseScatterance", atmosphere.scatterance)
+		self.atmosphereShader:send("baseAbsorption", atmosphere.absorption)
+		self.atmosphereShader:send("baseEmission", atmosphere.emission)
+		self.atmosphereShader:sendColor("atmosphereColour", atmosphere.colour)
+		self.atmosphereShader:send("atmosphereDensityPower", atmosphere.densityPower)
 		if not body.starData then
 			self.atmosphereShader:send("starCorona", false)
 		else
@@ -263,11 +261,12 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 			})
 		end
 		local shadowObjects = body.starData and {} or self:getShadowObjects(body, false)
-		self:sendShadowObjects(self.ringShader, shadowObjects, positionOffset)
+		self:sendShadowObjects(self.atmosphereShader, shadowObjects, positionOffset)
 		love.graphics.setColor(atmosphere.colour)
 		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
 	end
 	love.graphics.setBlendMode("alpha")
+	love.graphics.setColorMask()
 	love.graphics.setColor(1, 1, 1)
 
 	-- Draw HUD
@@ -289,96 +288,14 @@ function celestial:renderCelestialCamera(outputCanvas, dt, entity)
 		love.graphics.setColor(1, 1, 1)
 	end
 
-	-- What approach are we to struggle with today?
-	local logAverage = false
-	local fakeLuminance = true
-	-- Put luminance of lightCanvas into max luminance canvas
-	love.graphics.setShader(self.storeLuminanceShader)
-	self.storeLuminanceShader:send("atmosphereLightCanvas", self.atmosphereLightCanvas)
-	self.storeLuminanceShader:send("useFakeLuminance", fakeLuminance)
-	love.graphics.setCanvas(self.maxLuminanceCanvas)
-	love.graphics.clear(-1, 0, 0) -- NOTE: Gamma-correct rendering causes the canvas to NOT have a value of -1, but it is negative, and we only check for negativity in the shader
-	love.graphics.draw(self.lightCanvas)
-	-- Put log luminance into average luminance canvas
-	love.graphics.setShader(logAverage and self.logLuminanceShader or nil)
-	self.logLuminanceShader:send("delta", consts.luminanceLogDelta)
-	love.graphics.setCanvas(self.averageLuminanceCanvas)
-	love.graphics.clear(-1, 0, 0)
-	love.graphics.draw(self.maxLuminanceCanvas) -- Gets log of the previous step's result
-
-	-- Get maximum luminance
-	love.graphics.setShader(self.maxValueShader)
-	for i = 2, self.maxLuminanceCanvas:getMipmapCount() do
-		love.graphics.setCanvas(self.maxLuminanceCanvasViews[i])
-		self.maxValueShader:send("valueCanvas", self.maxLuminanceCanvasViews[i - 1])
-		self.maxValueShader:send("halfTexelSize", {
-			0.5 / self.maxLuminanceCanvas:getWidth(i - 1),
-			0.5 / self.maxLuminanceCanvas:getHeight(i - 1)
-		})
-		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.maxLuminanceCanvas:getDimensions(i))
-	end
-	-- Get average log luminance
-	love.graphics.setShader(self.averageValueShader)
-	for i = 2, self.averageLuminanceCanvas:getMipmapCount() do
-		love.graphics.setCanvas(self.averageLuminanceCanvasViews[i])
-		self.averageValueShader:send("valueCanvas", self.averageLuminanceCanvasViews[i - 1])
-		self.averageValueShader:send("halfTexelSize", {
-			0.5 / self.averageLuminanceCanvas:getWidth(i - 1),
-			0.5 / self.averageLuminanceCanvas:getHeight(i - 1)
-		})
-		love.graphics.draw(self.dummyTexture, 0, 0, 0, self.averageLuminanceCanvas:getDimensions(i))
-	end
-
-	local maxLuminanceCanvas1x1 = self.maxLuminanceCanvasViews[self.maxLuminanceCanvas:getMipmapCount()]
-	local averageLuminanceCanvas1x1 = self.averageLuminanceCanvasViews[self.averageLuminanceCanvas:getMipmapCount()]
-
-	-- Eye adaptation over time
-	love.graphics.setCanvas(self.eyeAdaptationCanvasB)
-	love.graphics.setShader(self.eyeAdaptationShader)
-	self.eyeAdaptationShader:send("thisFrameMaxLuminanceCanvas", maxLuminanceCanvas1x1)
-	self.eyeAdaptationShader:send("thisFrameAverageLuminanceCanvas", averageLuminanceCanvas1x1)
-	self.eyeAdaptationShader:send("averageLuminanceLogDelta", consts.luminanceLogDelta)
-	self.eyeAdaptationShader:send("smoothing", consts.eyeAdaptationSmoothing)
-	self.eyeAdaptationShader:send("moveRate", consts.eyeAdaptationMoveRate)
-	self.eyeAdaptationShader:send("moveLinearly", false) -- Through "base 2 orders of magnitude"
-	self.eyeAdaptationShader:send("dt", dt)
-	self.eyeAdaptationShader:send("jump", self.eyeAdaptationUninitialised)
-	self.eyeAdaptationShader:send("expAverage", logAverage)
-	love.graphics.draw(self.eyeAdaptationCanvasA)
-	self.eyeAdaptationUninitialised = false
-
-	-- Draw light canvas to output canvas with HDR (or not), then draw HUD canvas as normal
+	-- Draw light canvas to output canvas, then draw HUD canvas too
 	love.graphics.setCanvas(outputCanvas)
 	love.graphics.clear()
-	if consts.celestialHdr then
-		-- self.tonemappingShader:send("maxLuminanceCanvas", maxLuminanceCanvas1x1)
-		-- self.tonemappingShader:send("averageLuminanceCanvas", maxLuminanceCanvas1x1)
-		self.tonemappingShader:send("eyeAdaptationCanvas", self.eyeAdaptationCanvasB)
-		love.graphics.setShader(consts.celestialHdr and self.tonemappingShader or nil)
-		self.tonemappingShader:send("atmosphereLightCanvas", self.atmosphereLightCanvas)
-		love.graphics.draw(self.lightCanvas)
-	else
-		love.graphics.setShader()
-		love.graphics.draw(self.lightCanvas)
-		love.graphics.setBlendMode("add")
-		love.graphics.draw(self.atmosphereLightCanvas)
-		love.graphics.setBlendMode("alpha")
-	end
+	love.graphics.setShader()
+	love.graphics.draw(self.lightCanvas)
 	love.graphics.setShader()
 	love.graphics.draw(self.HUDCanvas)
 	love.graphics.setCanvas()
-
-	-- local eyeData = self.eyeAdaptationCanvasB:newImageData()
-	-- local average = self.averageLuminanceCanvas:newImageData(nil, self.averageLuminanceCanvas:getMipmapCount()):getPixel(0, 0)
-	-- print(
-	-- 	"max: " .. self.maxLuminanceCanvas:newImageData(nil, self.maxLuminanceCanvas:getMipmapCount()):getPixel(0, 0) .. "\n" ..
-	-- 	"avg: " .. (logAverage and math.exp(average) - consts.luminanceLogDelta or average) .. "\n" ..
-	-- 	"eyeMax: " .. eyeData:getPixel(0, 0) .. "\n" ..
-	-- 	"eyeAvg: " .. (eyeData:getPixel(1, 0)) .. "\n"
-	-- )
-
-	-- Flip eye adaptation canvasses
-	self.eyeAdaptationCanvasA, self.eyeAdaptationCanvasB = self.eyeAdaptationCanvasB, self.eyeAdaptationCanvasA
 end
 
 function celestial:getLights()
@@ -387,7 +304,7 @@ function celestial:getLights()
 		lights[#lights + 1] = {
 			position = vec3.clone(star.celestialMotionState.position),
 			colour = util.shallowClone(star.starData.colour),
-			luminousFlux = star.starData.radiantFlux * star.starData.luminousEfficacy
+			-- luminousFlux = star.starData.radiantFlux * star.starData.luminousEfficacy
 		}
 	end
 	return lights
@@ -461,7 +378,7 @@ function celestial:sendLights(shader, lights, offset)
 		local prefix = "lights[" .. glslI .. "]."
 		shader:send(prefix .. "position", {vec3.components(light.position + offset)})
 		shader:sendColor(prefix .. "colour", light.colour)
-		shader:send(prefix .. "luminousFlux", light.luminousFlux)
+		-- shader:send(prefix .. "luminousFlux", light.luminousFlux)
 	end
 end
 

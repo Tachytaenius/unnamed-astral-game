@@ -153,13 +153,14 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 				-- So: inputting the sun's mass and luminous efficacy gets you the sun's luminous flux. Which is what we want.
 				local colour = {1, 1, 1}
 				body:give("starData", radiantFlux, luminousEfficacy, colour)
-				local surfaceLuminance = luminousFlux * radius ^ -2 / consts.tau -- a best guess but at least it has luminance units lol
 				body:give("atmosphere",
-					radius * util.randomRange(1.2, 1.4),
-					{1, 1, 1},
-					(consts.celestialHdr and 2.5 / radius or 1 / radius) * util.randomRange(0.15, 0.25),
-					(consts.celestialHdr and surfaceLuminance or 1) * util.randomRange(0.15, 0.25),
-					util.randomRange(0.5, 2)
+					radius * util.randomRange(1, 1.75),
+					colour,
+					util.randomRange(0.8, 2),
+
+					util.randomRange(0.2, 0.4) / radius,
+					util.randomRange(0.01, 0.03) / radius,
+					0.9 / radius
 				)
 			elseif bodyType == "rocky" then
 				mass = parent.celestialMass.value * 10 ^ util.randomRange(-7.5, -4.5)
@@ -170,13 +171,19 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 				local thisVolume = mass / thisDensity
 				radius = (thisVolume / (2 / 3 * consts.tau)) ^ (1 / 3)
 
-				if love.math.random() < 0 then -- TEMP atmosphere disabled
+				if love.math.random() < 0.5 then
 					body:give("atmosphere",
-						radius * util.randomRange(0.001, 0.05),
-						{1, 1, 1},
-						util.randomRange(3, 5),
-						0,
-						util.randomRange(0.5, 2)
+						radius * util.randomRange(0.001, 0.03),
+						{
+							love.math.random(),
+							love.math.random(),
+							love.math.random()
+						},
+						util.randomRange(0.5, 2),
+
+						util.randomRange(0.1e-5, 0.9e-5),
+						util.randomRange(0.02e-5, 0.3e-5),
+						0
 					)
 				end
 

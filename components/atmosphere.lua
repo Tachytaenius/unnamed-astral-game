@@ -1,8 +1,10 @@
 local concord = require("lib.concord")
-return concord.component("atmosphere", function(c, height, colour, density, luminousFlux, densityPower)
+return concord.component("atmosphere", function(c, height, colour, densityPower, scatterance, absorption, emission)
 	c.height = height
 	c.colour = colour
-	c.density = density
-	c.luminousFlux = luminousFlux
 	c.densityPower = densityPower
+
+	c.scatterance = scatterance
+	c.absorption = absorption
+	c.emission = emission
 end)
