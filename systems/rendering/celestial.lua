@@ -20,9 +20,11 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 
 	-- Get matrices
 	local worldToCamera = mat4.camera(camera.absolutePosition + positionOffset, camera.orientation)
+	local aspectRatio = outputCanvas:getWidth() / outputCanvas:getHeight()
+	local verticalFOV = camera.verticalFOV
 	local cameraToClip = mat4.perspectiveLeftHanded(
-		outputCanvas:getWidth() / outputCanvas:getHeight(),
-		camera.verticalFOV,
+		aspectRatio,
+		verticalFOV,
 		consts.celestialFarPlaneDistance,
 		consts.celestialNearPlaneDistance
 	)
@@ -53,6 +55,60 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	self.skyboxShader:send("nonHdrBrightnessMultiplier", consts.pointLuminanceToRGBNonHDR)
 	love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
 
+	-- Sort out what to draw and how
+	local bodiesToDrawDirectly, atmosphereBodiesToDraw, bodiesToDrawAsPoints = {}, {}, {}
+	for _, body in ipairs(self.bodies) do
+		if util.isBodyResolvable(body, camera, consts.bodySolidOrPointFudgeFactor) then
+			bodiesToDrawDirectly[#bodiesToDrawDirectly + 1] = body
+			if body.atmosphere then
+				atmosphereBodiesToDraw[#atmosphereBodiesToDraw + 1] = body
+			end
+		else
+			bodiesToDrawAsPoints[#bodiesToDrawAsPoints + 1] = body
+		end
+	end
+
+	-- Draw faraway bodies as points on the background
+	-- We're using disks. The angular radius of a disk at distance 1 is atan(radius) (would divide radius by distance).
+	-- We want a radius that gets the right angular radius, so we use tan.
+	local scaleToGetAngularRadius = math.tan(consts.pointLightBlurAngularRadius)
+	local cameraUp = vec3.rotate(consts.upVector, camera.orientation)
+	local cameraRight = vec3.rotate(consts.rightVector, camera.orientation)
+	local cameraToClipPoint = mat4.perspectiveLeftHanded(
+		aspectRatio,
+		verticalFOV,
+		1.5,
+		0.5
+	)
+	local worldToClipPoint = cameraToClipPoint * worldToCameraStationary
+	local diskDistanceToSphere = util.unitSphereSphericalCapHeightFromAngularRadius(consts.pointLightBlurAngularRadius)
+	self.blurredPointShader:send("cameraUp", {vec3.components(cameraUp)})
+	self.blurredPointShader:send("cameraRight", {vec3.components(cameraRight)})
+	self.blurredPointShader:send("scale", scaleToGetAngularRadius)
+	self.blurredPointShader:send("diskDistanceToSphere", diskDistanceToSphere)
+	self.blurredPointShader:send("worldToClip", {mat4.components(worldToClipPoint)})
+	self.blurredPointShader:send("vertexFadePower", consts.blurredPointVertexFadePower)
+	love.graphics.setShader(self.blurredPointShader)
+	love.graphics.setBlendMode("add")
+	for _, body in ipairs(bodiesToDrawAsPoints) do
+		local direction = vec3.normalize(body.celestialMotionState.position - camera.absolutePosition) -- No need to consider position offset
+		local colour, brightness
+		if body.starData then
+			colour = body.starData.colour
+			brightness = 100
+		else
+			-- TODO!
+			colour = {0, 0, 0}
+			brightness = 0
+		end
+
+		self.blurredPointShader:send("pointDirection", {vec3.components(direction)})
+		local r, g, b = love.math.gammaToLinear(colour)
+		self.blurredPointShader:send("pointIncomingLight", {r * brightness, g * brightness, b * brightness})
+		love.graphics.draw(self.diskMesh)
+	end
+	love.graphics.setBlendMode("alpha")
+
 	-- Draw bodies to light canvas, with depth and position information, then draw rings
 	love.graphics.setCanvas({
 		self.lightCanvas,
@@ -61,7 +117,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	})
 	love.graphics.setDepthMode("lequal", true)
 	love.graphics.setShader(self.bodyShader)
-	for _, body in ipairs(self.bodies) do
+	for _, body in ipairs(bodiesToDrawDirectly) do
 		local modelToWorld = mat4.transform(
 			body.celestialMotionState.position + positionOffset,
 			body.celestialOrientationState.value,
@@ -213,7 +269,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		love.graphics.setMeshCullMode("back")
 	end
 
-	-- Draw atmospheres to atmosphere light canvas, using position information but not writing to it
+	-- Draw atmospheres to light canvas, using position information but not writing to it
 	love.graphics.setCanvas(self.lightCanvas)
 	love.graphics.setDepthMode("always", false)
 	love.graphics.setBlendMode("alpha", "alphamultiply")
@@ -223,7 +279,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	self.atmosphereShader:send("clipToSky", {mat4.components(clipToSky)})
 	self.atmosphereShader:send("cameraPosition", {vec3.components(camera.absolutePosition + positionOffset)})
 	self.atmosphereShader:send("stepsPerRay", consts.atmosphereRayStepCount)
-	for _, body in ipairs(self.bodiesWithAtmospheres) do
+	for _, body in ipairs(atmosphereBodiesToDraw) do
 		local atmosphere = body.atmosphere
 		self.atmosphereShader:send("atmospherePosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.atmosphereShader:send("bodyRadius", body.celestialRadius.value)

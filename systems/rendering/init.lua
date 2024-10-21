@@ -63,6 +63,7 @@ function rendering:init()
 		"#define FLIP_Y\n" .. love.filesystem.read("shaders/include/skyDirection.glsl") ..
 		love.filesystem.read("shaders/skybox.glsl")
 	)
+	self.blurredPointShader = love.graphics.newShader("shaders/blurredPoint.glsl")
 
 	-- Meshes
 	self.orbitLineMesh = util.generateCircleMesh(1024) -- TEMP: Not enough for distant orbits
@@ -73,6 +74,7 @@ function rendering:init()
 		{0, 0, 0, 1, 1, 1},
 		{1, 1, 1, 1, 1, 1}
 	}, "triangles")
+	self.diskMesh = util.generateDiskMesh(consts.blurredPointDiskMeshVertices)
 
 	-- Misc
 	self.missingTextureSlot = concord.entity():give("bodyCubemapTextureSlot").bodyCubemapTextureSlot -- HACK: Entity is discarded (not added to world), component is kept

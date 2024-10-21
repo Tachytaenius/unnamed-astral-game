@@ -60,6 +60,7 @@ graphics.cubemapOrientationsYFlip[3], graphics.cubemapOrientationsYFlip[4] = gra
 graphics.bodyTextureCubemapSideLength = 1024
 graphics.bodyCubemapTextureSlotCount = 6
 graphics.bodyTextureCubemapSlotClaimFudgeFactor = 1.5
+graphics.bodySolidOrPointFudgeFactor = 0.85
 graphics.missingTextureSubdivisions = 9
 graphics.missingTextureColourA = {1, 0, 1}
 graphics.missingTextureColourB = {0, 0, 0}

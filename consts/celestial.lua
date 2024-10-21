@@ -19,8 +19,7 @@ celestial.gameplayOriginDistance = 3e20
 celestial.galaxyDistancePower = 0.6
 celestial.galaxySquash = 0.2
 celestial.galaxyHaloProportion = 0.1
-celestial.galaxyOtherStarCount = 1000000
-celestial.galaxyDustSampleBrightnessMultiplier = 0.4e-5
+celestial.galaxyOtherStarCount = 250000
 
 celestial.maxGaseousBodyColourSteps = 32
 

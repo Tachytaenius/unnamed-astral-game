@@ -49,7 +49,6 @@ return function(parameters)
 		forwards = parameters.squashDirection,
 		squashAmount = parameters.squashAmount,
 		radius = parameters.radius,
-		galaxyHaloProportion = parameters.haloProportion,
-		galaxyDustSampleBrightnessMultiplier = parameters.dustSampleBrightnessMultiplier
+		galaxyHaloProportion = parameters.haloProportion
 	}
 end

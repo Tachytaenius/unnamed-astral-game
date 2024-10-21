@@ -17,8 +17,7 @@ return function()
 		squashDirection = util.randomOnSphereSurface(1),
 		haloProportion = consts.galaxyHaloProportion,
 		otherStarCount = consts.galaxyOtherStarCount,
-		gameplayOriginDistance = consts.gameplayOriginDistance,
-		dustSampleBrightnessMultiplier = consts.galaxyDustSampleBrightnessMultiplier
+		gameplayOriginDistance = consts.gameplayOriginDistance
 	})
 
 	state.ecs = concord.world()

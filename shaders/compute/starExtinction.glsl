@@ -1,12 +1,26 @@
 #line 1
 
 // Requires include/galaxyDustFunction.glsl concatenated
-// Requires include/skyDirection.glsl concatenated
 
+struct Star {
+	vec3 position;
+	vec3 incomingLightPreExtinction;
+};
+readonly buffer Stars {
+	Star stars[];
+};
+
+struct StarDrawable {
+	vec3 direction;
+	vec3 incomingLight;
+};
+buffer StarDrawables {
+	StarDrawable starDrawables[];
+};
+
+uniform uint starCount;
 uniform vec3 cameraPosition;
 uniform float rayStepCount;
-
-#ifdef PIXEL
 
 struct ConvexRaycastResult {
 	bool hit;
@@ -29,37 +43,44 @@ ConvexRaycastResult sphereRaycast2(vec3 spherePosition, float sphereRadius, vec3
 	return ConvexRaycastResult (true, t1, t2);
 }
 
-vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
-	vec3 direction = normalize(directionPreNormalise);
-	direction.y *= -1.0; // I have no idea
-	
+layout(local_size_x = 64, local_size_y = 1, local_size_z = 1) in;
+void computemain() {
+	uint i = love_GlobalThreadID.x;
+	if (i >= starCount) {
+		return;
+	}
+
+	Star star = stars[i];
+	vec3 difference = star.position - cameraPosition;
+	float starDistance = length(difference);
+	vec3 direction = difference / starDistance;
+
 	ConvexRaycastResult result = sphereRaycast2(vec3(0.0), galaxyRadius, cameraPosition, direction);
 	float t1 = result.t1;
 	float t2 = result.t2;
 	if (!result.hit || t2 <= 0.0) {
-		return vec4(vec3(0.0), 1.0);
+		return;
 	}
 	t1 = max(t1, 0.0);
+	t2 = min(t2, starDistance);
+	if (t2 <= t1) {
+		return;
+	}
 
-	vec3 totalIncomingLight = vec3(0.0);
 	float totalTransmittance = 1.0;
 	float stepSize = (t2 - t1) / rayStepCount;
 	for (float i = rayStepCount - 1.0; i >= 0.0; i--) {
-		float sampleDistance = mix(t1, t2, i / rayStepCount); // AKA t, since direction has a length of 1
+		float sampleDistance = mix(t1, t2, i / rayStepCount);
 		vec3 samplePosition = mix(cameraPosition, cameraPosition + direction, sampleDistance);
-		GalaxyDustSample sample = sampleGalaxy(samplePosition);
-		
-		float extinction = sample.absorption + sample.scatterance;
-
+		GalaxyDustSample dustSample = sampleGalaxy(samplePosition);
+		float extinction = dustSample.absorption + dustSample.scatterance;
 		float transmittanceThisStep = exp(-extinction * stepSize);
-		vec3 incomingLightThisStep = sample.colour * stepSize * sample.emission;
-
-		totalIncomingLight *= transmittanceThisStep;
-		totalIncomingLight += incomingLightThisStep;
 		totalTransmittance *= transmittanceThisStep;
 	}
 
-	return vec4(totalIncomingLight, 1.0 - totalTransmittance);
+	StarDrawable starDrawable = StarDrawable (
+		direction,
+		star.incomingLightPreExtinction * totalTransmittance
+	);
+	starDrawables[i] = starDrawable;
 }
-
-#endif

@@ -1,4 +1,7 @@
-// Optionally, #define INSTANCED
+#pragma language glsl4
+#line 2
+
+// Optionally, define INSTANCED
 
 varying float fade;
 varying vec3 colour;
@@ -6,11 +9,16 @@ varying vec3 colour;
 #ifdef VERTEX
 
 #ifdef INSTANCED
-attribute vec3 InstanceDirection;
-attribute vec3 InstanceColour;
+struct StarDrawable {
+	vec3 direction;
+	vec3 incomingLight;
+};
+readonly buffer StarDrawables {
+	StarDrawable starDrawables[];
+};
 #else
 uniform vec3 pointDirection;
-uniform vec3 pointColour;
+uniform vec3 pointIncomingLight;
 #endif
 
 // Both depend on angular radius
@@ -26,10 +34,11 @@ attribute float VertexFade;
 vec4 position(mat4 loveTransform, vec4 vertexPosition) {
 	fade = VertexFade;
 #ifdef INSTANCED
-	colour = InstanceColour;
-	vec3 direction = InstanceDirection;
+	StarDrawable starDrawable = starDrawables[gl_InstanceID];
+	colour = starDrawable.incomingLight;
+	vec3 direction = starDrawable.direction;
 #else
-	colour = pointColour;
+	colour = pointIncomingLight;
 	vec3 direction = pointDirection;
 #endif
 	vec3 billboardRight = cross(cameraUp, direction);
