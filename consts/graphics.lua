@@ -72,6 +72,7 @@ graphics.pointLightBlurAngularRadius = 0.005
 graphics.blurredPointDiskMeshVertices = 8
 graphics.blurredPointVertexFadePower = 5
 graphics.pointLuminanceToRGBNonHDR = 1e4
+graphics.distantStarBodyBrightness = 100
 
 graphics.galaxyRaySteps = 20
 

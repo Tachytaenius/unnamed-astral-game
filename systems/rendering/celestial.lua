@@ -95,7 +95,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		local colour, brightness
 		if body.starData then
 			colour = body.starData.colour
-			brightness = 100
+			brightness = consts.distantStarBodyBrightness
 		else
 			-- TODO!
 			colour = {0, 0, 0}
