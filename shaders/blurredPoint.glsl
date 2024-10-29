@@ -29,9 +29,10 @@ uniform vec3 cameraUp;
 uniform vec3 cameraRight;
 uniform mat4 worldToClip;
 
-attribute float VertexFade;
+layout (location = 0) in vec2 VertexPosition;
+layout (location = 1) in float VertexFade;
 
-vec4 position(mat4 loveTransform, vec4 vertexPosition) {
+void vertexmain() {
 	fade = VertexFade;
 #ifdef INSTANCED
 	StarDrawable starDrawable = starDrawables[gl_InstanceID];
@@ -48,8 +49,8 @@ vec4 position(mat4 loveTransform, vec4 vertexPosition) {
 	}
 	vec3 billboardUp = cross(direction, billboardRight);
 	vec3 centre = direction * (1.0 - diskDistanceToSphere);
-	vec3 celestialSpherePos = centre + scale * (billboardRight * vertexPosition.x + billboardUp * vertexPosition.y);
-	return worldToClip * vec4(celestialSpherePos, 1.0);
+	vec3 celestialSpherePos = centre + scale * (billboardRight * VertexPosition.x + billboardUp * VertexPosition.y);
+	gl_Position = worldToClip * vec4(celestialSpherePos, 1.0);
 }
 
 #endif
@@ -58,10 +59,12 @@ vec4 position(mat4 loveTransform, vec4 vertexPosition) {
 
 uniform float vertexFadePower;
 
-vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
+out vec4 outColour;
+
+void pixelmain() {
 	// Expects additive mode
 	float fadeMultiplier = pow(1.0 - fade, vertexFadePower);
-	return vec4(fadeMultiplier * colour, 1.0);
+	outColour = vec4(fadeMultiplier * colour, 1.0);
 }
 
 #endif

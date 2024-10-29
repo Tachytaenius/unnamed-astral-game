@@ -13,23 +13,23 @@ graphics.canvasSystemHeight = 270*2
 
 graphics.loadObjCoordMultiplier = vec3(1, 1, -1) -- Export OBJs from Blender with +Y up and +Z forward -- TODO: Why is this needed?
 graphics.objectVertexFormat = {
-	{name = "VertexPosition", format = "floatvec3"},
-	{name = "VertexTexCoord", format = "floatvec2"},
-	{name = "VertexNormal", format = "floatvec3"}
+	{name = "VertexPosition", location = 0, format = "floatvec3"},
+	{name = "VertexTexCoord", location = 1, format = "floatvec2"},
+	{name = "VertexNormal", location = 2, format = "floatvec3"}
 }
 
 graphics.lineVertexFormat = {
-	{name = "VertexPosition", format = "floatvec3"},
-	{name = "VertexColor", format = "floatvec3"}
+	{name = "VertexPosition", location = 0, format = "floatvec3"},
+	{name = "VertexColor", location = 1, format = "floatvec3"}
 }
 
 graphics.blurredPointVertexFormat = {
-	{name = "VertexPosition", format = "floatvec3"},
-	{name = "VertexFade", format = "float"}
+	{name = "VertexPosition", location = 0, format = "floatvec2"},
+	{name = "VertexFade", location = 1, format = "float"}
 }
 graphics.blurredPointInstanceVertexFormat = {
-	{name = "InstanceDirection", format = "floatvec3"},
-	{name = "InstanceColour", format = "floatvec3"}
+	{name = "InstanceDirection", location = 0, format = "floatvec3"},
+	{name = "InstanceColour", location = 1, format = "floatvec3"}
 }
 
 graphics.celestialNearPlaneDistance = 2e5 -- One order of magnitude below megametres
