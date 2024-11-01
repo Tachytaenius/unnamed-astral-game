@@ -17,7 +17,7 @@ local function ensureGraphicsObjects()
 	dummyTexture = dummyTexture or love.graphics.newImage(love.image.newImageData(1, 1))
 end
 
-return function(slot, baseColourDrawFunction, heightmapDrawFunction)
+return function(slot, body, baseColourDrawFunction, heightmapDrawFunction)
 	ensureGraphicsObjects()
 
 	local baseColourCubemapCanvas = slot.baseColour
@@ -57,7 +57,7 @@ return function(slot, baseColourDrawFunction, heightmapDrawFunction)
 		/ 4 -- Making it even smaller than what is possibly the minimum should be safe, provided our bump map is not using nearest neighbour
 		-- I'm pretty sure it's not going to be perfect.
 	heightmapToNormalShader:send("rotateAngle", rotateAngle)
-	heightmapToNormalShader:send("strength", 1)
+	heightmapToNormalShader:send("bodyRadius", body and body.celestialRadius.value or 1)
 	heightmapToNormalShader:send("forwardVector", {vec3.components(consts.forwardVector)})
 	-- heightmapToNormalShader:send("upVector", {vec3.components(consts.upVector)})
 	heightmapToNormalShader:send("rightVector", {vec3.components(consts.rightVector)})

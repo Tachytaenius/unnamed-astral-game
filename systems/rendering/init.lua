@@ -78,7 +78,7 @@ function rendering:init()
 
 	-- Misc
 	self.missingTextureSlot = concord.entity():give("bodyCubemapTextureSlot").bodyCubemapTextureSlot -- HACK: Entity is discarded (not added to world), component is kept
-	util.drawToPlanetTextureCubemaps(self.missingTextureSlot,
+	util.drawToPlanetTextureCubemaps(self.missingTextureSlot, nil, -- nil for no body
 		function(orientation) -- Base colour
 			local w, h = love.graphics.getCanvas()[1][1]:getDimensions() -- Cubemap
 			love.graphics.clear(consts.missingTextureColourA)

@@ -282,7 +282,7 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 					feature.centrePower = util.randomRange(1, 2)
 					feature.wallWidthRampUp = feature.angularRadius * util.randomRange(0.01, 0.11)
 					feature.wallWidthRampDown = feature.angularRadius * util.randomRange(0.45, 0.55)
-					feature.wallPeakHeight = util.lerp(0, 8, arcLength)
+					feature.wallPeakHeight = arcLength * util.randomRange(0.025, 0.075)
 					feature.heightMultiplierNoiseFrequency = util.randomRange(40, 80)
 					feature.heightMultiplierNoiseAmplitude = util.randomRange(0, 0.5)
 					features[#features + 1] = feature

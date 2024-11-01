@@ -28,9 +28,13 @@ uniform vec3 rightVector;
 uniform vec3 upVector;
 uniform vec3 forwardVector;
 uniform float rotateAngle;
-uniform float strength;
+uniform float bodyRadius;
 uniform samplerCube heightmap;
 uniform bool nearPole; // Oh my god
+
+vec3 getTriangleNormal(vec3 p1, vec3 p2, vec3 p3) {
+	return normalize(cross(p2 - p1, p3 - p1));
+}
 
 vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoords) {
 	vec3 direction = normalize(directionPreNormalise);
@@ -52,15 +56,15 @@ vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoo
 	float eastSample = Texel(heightmap, eastDir).r;
 	float westSample = Texel(heightmap, westDir).r;
 
-	float northVsSouthDerivative = 2.0 * southSample - 2.0 * northSample;
-	float eastVsWestDerivative = 2.0 * westSample - 2.0 * eastSample;
+	vec3 northPos = northDir * (bodyRadius + northSample);
+	// vec3 southPos = southDir * (bodyRadius + southSample);
+	vec3 eastPos = eastDir * (bodyRadius + eastSample);
+	// vec3 westPos = westDir * (bodyRadius + westSample);
 
-	vec3 outNormalTangentSpace = normalize(vec3(eastVsWestDerivative, northVsSouthDerivative, 1.0 / strength));
-	vec3 n = direction;
-	vec3 t = normalize(cross(nearPole ? rightVector : forwardVector, n));
-	vec3 b = cross(n, t);
-	mat3 tbn = mat3(t, b, n);
-	vec3 outNormalObjectSpace = tbn * outNormalTangentSpace;
+	float centralSample = Texel(heightmap, direction).r;
+	vec3 centralPos = direction * (bodyRadius + centralSample);
+
+	vec3 outNormalObjectSpace = getTriangleNormal(centralPos, eastPos, northPos);
 	
 	return vec4(outNormalObjectSpace * 0.5 + 0.5, 1.0);
 }

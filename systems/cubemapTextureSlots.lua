@@ -116,7 +116,7 @@ function cubemapTextureSlots:update()
 					local seed = body.textureCubemapsSeed.value
 					local graphicsObjects = self:getWorld():getSystem(systems.starSystemGeneration).graphicsObjects -- TODO: Move to this system
 					local baseColourDrawFunction, heightmapDrawFunction = util.getPlanetTextureCubemapDrawFunctions(body, seed, graphicsObjects)
-					util.drawToPlanetTextureCubemaps(slotComponent, baseColourDrawFunction, heightmapDrawFunction)
+					util.drawToPlanetTextureCubemaps(slotComponent, body, baseColourDrawFunction, heightmapDrawFunction)
 					self:storeMinMaxHeightmapValue(slotComponent)
 				end -- Else assume the body's texture is still there
 			end
