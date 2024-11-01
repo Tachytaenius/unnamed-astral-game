@@ -251,9 +251,9 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 						local axis = vec3.normalise(vec3.cross(directionBeforeVerticalRotation, pole))
 						local rotation = quat.fromAxisAngle(verticalRotationAngle * axis)
 						mountain.direction = vec3.rotate(directionBeforeVerticalRotation, rotation)
-						local sizeness = love.math.random() * 4 * tapering + 0.5
+						local sizeness = love.math.random() * tapering * 0.9 + 0.1
 						mountain.angularRadius = sizeness * consts.tau * 0.005
-						mountain.height = (sizeness + util.randomRange(-0.05, 0.2)) * 30
+						mountain.height = sizeness * util.randomRange(0.005, 0.015) * radius
 						mountain.radiusWarpIterations = love.math.random(6, 10) -- Must be at least two
 						mountain.radiusWarpBase = util.randomRange(0.2, 2)
 						mountain.radiusWarpPower = util.randomRange(0.2, 2)
@@ -269,18 +269,20 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 				-- Non-set features
 				for _=1, love.math.random(0, 300) do
 					local feature = {}
-					local impact = util.randomRange(0.005, 1)
+					local maxAngularRadius = consts.tau * 0.4
+					local maxArcLength = radius * maxAngularRadius
+					local arcLength = util.randomRange(1, math.min(100000, maxArcLength))
 					feature.type = "crater"
 					feature.direction = util.randomOnSphereSurface(1)
-					feature.angularRadius = impact * consts.tau * 0.01
-					feature.depth = 10 * (impact + love.math.random() * 0.2)
+					feature.depth = arcLength * util.randomRange(0.05, 0.15)
+					feature.angularRadius = arcLength / radius
 					feature.power = util.randomRange(1, 3)
 					feature.centreAngularRadius = feature.angularRadius * util.randomRange(0.02, 0.1)
 					feature.centreHeight = feature.depth * util.randomRange(0.01, 0.05)
 					feature.centrePower = util.randomRange(1, 2)
 					feature.wallWidthRampUp = feature.angularRadius * util.randomRange(0.01, 0.11)
 					feature.wallWidthRampDown = feature.angularRadius * util.randomRange(0.45, 0.55)
-					feature.wallPeakHeight = util.lerp(0, 8, impact)
+					feature.wallPeakHeight = util.lerp(0, 8, arcLength)
 					feature.heightMultiplierNoiseFrequency = util.randomRange(40, 80)
 					feature.heightMultiplierNoiseAmplitude = util.randomRange(0, 0.5)
 					features[#features + 1] = feature
