@@ -58,6 +58,10 @@ end
 graphics.cubemapOrientationsYFlip[3], graphics.cubemapOrientationsYFlip[4] = graphics.cubemapOrientationsYFlip[4], graphics.cubemapOrientationsYFlip[3]
 
 graphics.bodyTextureCubemapSideLength = 1024
+assert(
+	math.log(graphics.bodyTextureCubemapSideLength, 2) % 1 == 0,
+	"bodyTextureCubemapSideLength should be a power of two to not break min/max heightmap value calculation" -- This could probably be solved somehow but enforcing power of two is much simpler
+)
 graphics.bodyCubemapTextureSlotCount = 6
 graphics.bodyTextureCubemapSlotClaimFudgeFactor = 1.5
 graphics.bodySolidOrPointFudgeFactor = 0.85
@@ -73,6 +77,8 @@ graphics.blurredPointDiskMeshVertices = 8
 graphics.blurredPointVertexFadePower = 5
 graphics.pointLuminanceToRGBNonHDR = 1e4
 graphics.distantStarBodyBrightness = 100
+
+graphics.bodyHeightmapFormat = "r32f"
 
 graphics.galaxyRaySteps = 20
 

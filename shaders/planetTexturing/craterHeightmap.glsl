@@ -26,10 +26,6 @@ vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoo
 	vec3 direction = normalize(directionPreNormalise);
 	float angularDistance = max(0.0, getAngularDistance(direction, featureDirection));
 
-	if (angularDistance > 0.0) {
-		// return vec4(vec3(angularDistance < angularRadius ? 1.0 : 0.0), 1.0);
-	}
-
 	float heightOffset;
 	if (angularDistance < angularRadius) {
 		heightOffset = depth * (pow(angularDistance / angularRadius, power) - 1.0);

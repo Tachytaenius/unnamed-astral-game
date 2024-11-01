@@ -34,11 +34,15 @@ return function(slot, baseColourDrawFunction, heightmapDrawFunction)
 	for i, orientation in ipairs(consts.cubemapOrientations) do
 		love.graphics.setCanvas(baseColourCubemapCanvas, i) -- If another canvas is needed, this setup can be stored with love.graphics.getCanvas()
 		love.graphics.clear() -- Can clear again to another colour in drawFunction
+		love.graphics.push("all")
 		baseColourDrawFunction(orientation)
+		love.graphics.pop()
 
 		love.graphics.setCanvas(heightmapCubemapCanvas, i)
 		love.graphics.clear()
+		love.graphics.push("all")
 		heightmapDrawFunction(orientation)
+		love.graphics.pop()
 	end
 
 	love.graphics.setCanvas()
