@@ -140,6 +140,8 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		self.bodyShader:send("bodyPosition", {vec3.components(body.celestialMotionState.position + positionOffset)})
 		self.bodyShader:send("bodyRadius", body.celestialRadius.value)
 
+		self.bodyShader:send("enableSelfShadowing", true)
+
 		self.bodyShader:send("isStar", not not body.starData)
 		self.bodyShader:send("time", drawTime)
 		if not body.starData then
@@ -149,6 +151,8 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 				or self.missingTextureSlot
 			self.bodyShader:send("baseColourTexture", slot.baseColour)
 			self.bodyShader:send("normalTexture", slot.normal)
+			self.bodyShader:send("heightmapTexture", slot.height)
+			self.bodyShader:send("heightmapMinMax", slot.heightMinMax)
 		else
 			self.bodyShader:sendColor("starColour", body.starData.colour)
 			-- self.bodyShader:send("starLuminousFlux", body.starData.radiantFlux * body.starData.luminousEfficacy)

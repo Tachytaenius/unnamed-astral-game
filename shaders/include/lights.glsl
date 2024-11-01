@@ -129,18 +129,58 @@ bool shadowCast(Light light, vec3 pointPosition) {
 
 vec3 getAverageFormShadowAndColourAtPointNormal(vec3 pointPosition, vec3 pointNormal) {
 	vec3 preDivide = vec3(0.0);
-		float total = 0.0;
-		for (int i = 0; i < lightCount; i++) {
-			Light light = lights[i];
-			if (shadowCast(light, pointPosition)) {
-				continue;
-			}
-			vec3 lightDirection = normalize(light.position - pointPosition);
-			float value = max(0.0, dot(lightDirection, pointNormal));
-			preDivide += value * light.colour;
-			total++;
+	float total = 0.0;
+	for (int i = 0; i < lightCount; i++) {
+		Light light = lights[i];
+		if (shadowCast(light, pointPosition)) {
+			continue;
 		}
-		return total > 0.0 ? preDivide / total : vec3(0.0);
+		vec3 lightDirection = normalize(light.position - pointPosition);
+		float value = max(0.0, dot(lightDirection, pointNormal));
+		preDivide += value * light.colour;
+		total++;
+	}
+	return total > 0.0 ? preDivide / total : vec3(0.0);
+}
+
+vec3 getAverageFormShadowAndColourAtPointNormalSelfShadow(
+	vec3 pointPosition, vec3 pointNormal,
+	vec3 bodyPosition, float bodyRadius, samplerCube heightmap, float heightmapMin, float heightmapMax, float rayStepSize, mat3 worldToModelNormal
+) {
+	vec3 preDivide = vec3(0.0);
+	float total = 0.0;
+	for (int i = 0; i < lightCount; i++) {
+		Light light = lights[i];
+		// Check for other body shadows
+		if (shadowCast(light, pointPosition)) {
+			continue;
+		}
+		// Now check for self-shadowing on the heightmap
+		vec3 lightDirection = normalize(light.position - pointPosition);
+		vec3 currentPosition = pointPosition;
+		bool hitWall = false;
+		while (
+			distance(currentPosition, bodyPosition) <= bodyRadius + heightmapMax // Are we within the max sphere?
+			&& distance(currentPosition, bodyPosition) >= bodyRadius + heightmapMin // Are we above the min sphere?
+		) {
+			currentPosition -= rayStepSize * lightDirection;
+			vec3 texelVector = worldToModelNormal * (currentPosition - bodyPosition);
+			texelVector.y *= -1.0; // No idea why the y flip is needed
+			float heightHere = Texel(heightmap, texelVector).r;
+			if (distance(currentPosition, bodyPosition) <= bodyRadius + heightHere) {
+				hitWall = true;
+				break;
+			}
+		}
+		if (hitWall) {
+			continue;
+		}
+		// Light is free to hit surface
+		float value = max(0.0, dot(lightDirection, pointNormal));
+		preDivide += value * light.colour;
+		total++;
+	}
+	return total > 0.0 ? preDivide / total : vec3(0.0);
 }
 
 vec3 getAverageLightColourAtPoint(vec3 pointPosition) {

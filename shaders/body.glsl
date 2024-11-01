@@ -25,6 +25,11 @@ uniform float farDistance;
 
 uniform samplerCube baseColourTexture;
 uniform samplerCube normalTexture;
+uniform samplerCube heightmapTexture;
+uniform sampler2D heightmapMinMax;
+const float heightStartMultiplier = 1.0001;
+
+uniform bool enableSelfShadowing;
 
 uniform float time;
 
@@ -101,7 +106,22 @@ void effect() {
 		vec3 normal = normalize(modelToWorldNormal * normalMapSample);
 		// y flipping and gamma correction are like my recurring archnemeses that I fight once a season. during the final battle against y flipping im gonna get almost defeated and then come back thru the power of love and win, and gamma will be redeemed
 
-		vec3 totalLight = getAverageFormShadowAndColourAtPointNormal(raycastFragmentPosition, normal);
+		vec3 totalLight;
+		if (!enableSelfShadowing) {
+			totalLight = getAverageFormShadowAndColourAtPointNormal(raycastFragmentPosition, normal);
+		} else {
+			float heightmapMin = texelFetch(heightmapMinMax, ivec2(0, 0), 0).r;
+			float heightmapMax = texelFetch(heightmapMinMax, ivec2(1, 0), 0).r;
+			// Step size needs to be small enough to catch any heightmap variation.
+			// It needs to increase with minimum size, err on the side of being smaller (hence 0.2), and decrease as texture resolution increases
+			float selfShadowRayStepSize = heightmapMin * 1.5 / float(textureSize(heightmapTexture, 0).x); 
+			float startHeightmapSample = Texel(heightmapTexture, textureSampleDirection * vec3(1.0, -1.0, 1.0)).r; // No idea why the y flip is needed
+			vec3 fragmentPositionHeightmap = bodyPosition + heightStartMultiplier * raycastFragmentNormal * (bodyRadius + startHeightmapSample);
+			totalLight = getAverageFormShadowAndColourAtPointNormalSelfShadow(
+				fragmentPositionHeightmap, normal,
+				bodyPosition, bodyRadius, heightmapTexture, heightmapMin, heightmapMax, selfShadowRayStepSize, worldToModelNormal
+			);
+		}
 
 		lightCanvasOutput = vec4(baseColour * totalLight, 1.0); // lightCanvas
 	} else {
