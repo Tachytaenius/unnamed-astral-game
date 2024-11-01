@@ -121,7 +121,7 @@ vec4 effect(vec4 loveColour, sampler2D image, vec2 textureCoords, vec2 windowCoo
 		* (1.0 - pow(angularDistance / angularRadius, 2.0))
 		* (1.0 - angularDistance / angularRadius)
 
-		* mountainNoise(directionWarped * 5.0, 4, 1.5)
+		* mountainNoise(directionWarped * 5.0, 4, height * 2.0)
 	) : 0.0);
 
 	return vec4(vec3(heightOffset), 1.0);

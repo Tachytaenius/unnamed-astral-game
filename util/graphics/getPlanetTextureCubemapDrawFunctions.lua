@@ -191,12 +191,13 @@ return function(body, seed, graphicsObjects)
 				bumps = true
 			end
 			baseShader:send("bumps", bumps)
-			baseShader:send("bumpHeight", randomGenerator:random() * 4 + 0.1)
-			baseShader:send("bumpFrequency", randomGenerator:random() * 20 + 2)
+			local radius = body.celestialRadius.value
+			baseShader:send("bumpHeight", radius * (randomGenerator:random() * 0.005 + 0.001))
+			baseShader:send("bumpFrequency", randomGenerator:random() * 20 + 2) -- Based on direction, doesn't care about body size
 			baseShader:send("valleys", valleys)
-			baseShader:send("valleyDepth", randomGenerator:random() * 0.9 + 0.1)
+			baseShader:send("valleyDepth", radius * (randomGenerator:random() * 0.001 + 0.001))
 			baseShader:send("valleyDensity", randomGenerator:random() * 40 + 5)
-			baseShader:send("valleyWidth", randomGenerator:random() * 0.02 + 0.01)
+			baseShader:send("valleyWidth", randomGenerator:random() * 0.02 + 0.02) -- Also doesn't need to care about body size
 			baseShader:send("seed", seed)
 
 			sendSky(clipToSky)

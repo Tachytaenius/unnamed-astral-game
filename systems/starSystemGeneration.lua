@@ -233,7 +233,7 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 					mountainRange.startDirection = util.randomOnSphereSurface(1)
 					local rotationToEnd = util.randomOnSphereSurface(util.randomRange(consts.tau * 0.05, consts.tau * 0.2))
 					mountainRange.endDirection = vec3.rotate(mountainRange.startDirection, quat.fromAxisAngle(rotationToEnd))
-					mountainRange.angularWidth = util.randomRange(consts.tau * 0.005, consts.tau * 0.01)
+					mountainRange.angularWidth = util.randomRange(consts.tau * 0.01, consts.tau * 0.004)
 					mountainRange.taperWidth = util.randomRange(0.2, 0.45)
 					local pole = vec3.normalise(vec3.cross(mountainRange.startDirection, mountainRange.endDirection))
 
@@ -252,8 +252,8 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 						local rotation = quat.fromAxisAngle(verticalRotationAngle * axis)
 						mountain.direction = vec3.rotate(directionBeforeVerticalRotation, rotation)
 						local sizeness = love.math.random() * tapering * 0.9 + 0.1
-						mountain.angularRadius = sizeness * consts.tau * 0.005
-						mountain.height = sizeness * util.randomRange(0.005, 0.015) * radius
+						mountain.angularRadius = sizeness * consts.tau * 0.02
+						mountain.height = sizeness * util.randomRange(0.01, 0.03) * radius
 						mountain.radiusWarpIterations = love.math.random(6, 10) -- Must be at least two
 						mountain.radiusWarpBase = util.randomRange(0.2, 2)
 						mountain.radiusWarpPower = util.randomRange(0.2, 2)
@@ -269,9 +269,10 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 				-- Non-set features
 				for _=1, love.math.random(0, 300) do
 					local feature = {}
-					local maxAngularRadius = consts.tau * 0.4
+					local maxAngularRadius = consts.tau * 0.01
 					local maxArcLength = radius * maxAngularRadius
-					local arcLength = util.randomRange(1, math.min(100000, maxArcLength))
+					-- local arcLength = util.randomRange(1, math.min(100000, maxArcLength))
+					local arcLength = util.randomRange(1, maxArcLength) -- This does mean that crater sizes won't be consistent across the star system...
 					feature.type = "crater"
 					feature.direction = util.randomOnSphereSurface(1)
 					feature.depth = arcLength * util.randomRange(0.05, 0.15)
