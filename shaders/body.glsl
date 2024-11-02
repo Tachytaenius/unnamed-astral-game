@@ -30,6 +30,7 @@ uniform sampler2D heightmapMinMax;
 const float heightStartMultiplier = 1.0001;
 
 uniform bool enableSelfShadowing;
+uniform mat3 inverseBodyOrientationMatrix;
 
 uniform float time;
 
@@ -119,7 +120,7 @@ void effect() {
 			vec3 fragmentPositionHeightmap = bodyPosition + heightStartMultiplier * raycastFragmentNormal * (bodyRadius + startHeightmapSample);
 			totalLight = getAverageFormShadowAndColourAtPointNormalSelfShadow(
 				fragmentPositionHeightmap, normal,
-				bodyPosition, bodyRadius, heightmapTexture, heightmapMin, heightmapMax, selfShadowRayStepSize, worldToModelNormal
+				bodyPosition, bodyRadius, heightmapTexture, heightmapMin, heightmapMax, selfShadowRayStepSize, inverseBodyOrientationMatrix
 			);
 		}
 

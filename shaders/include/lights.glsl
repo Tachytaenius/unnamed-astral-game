@@ -145,7 +145,7 @@ vec3 getAverageFormShadowAndColourAtPointNormal(vec3 pointPosition, vec3 pointNo
 
 vec3 getAverageFormShadowAndColourAtPointNormalSelfShadow(
 	vec3 pointPosition, vec3 pointNormal,
-	vec3 bodyPosition, float bodyRadius, samplerCube heightmap, float heightmapMin, float heightmapMax, float rayStepSize, mat3 worldToModelNormal
+	vec3 bodyPosition, float bodyRadius, samplerCube heightmap, float heightmapMin, float heightmapMax, float rayStepSize, mat3 inverseBodyOrientationMatrix
 ) {
 	vec3 preDivide = vec3(0.0);
 	float total = 0.0;
@@ -157,17 +157,20 @@ vec3 getAverageFormShadowAndColourAtPointNormalSelfShadow(
 		}
 		// Now check for self-shadowing on the heightmap
 		vec3 lightDirection = normalize(light.position - pointPosition);
-		vec3 currentPosition = pointPosition;
+		// Instead of multiplying texelVector (in the for loop) by a mat3 every frame we rotate these other, more unchanging variables
+		vec3 lightDirectionRotated = inverseBodyOrientationMatrix * lightDirection;
+		vec3 currentPositionRotated = inverseBodyOrientationMatrix * pointPosition;
+		vec3 bodyPositionRotated = inverseBodyOrientationMatrix * bodyPosition;
 		bool hitWall = false;
-		while (
-			distance(currentPosition, bodyPosition) <= bodyRadius + heightmapMax // Are we within the max sphere?
-			&& distance(currentPosition, bodyPosition) >= bodyRadius + heightmapMin // Are we above the min sphere?
-		) {
-			currentPosition -= rayStepSize * lightDirection;
-			vec3 texelVector = worldToModelNormal * (currentPosition - bodyPosition);
+		float dist = distance(currentPositionRotated, bodyPositionRotated);
+		while (dist <= bodyRadius + heightmapMax) { // Are we within the max sphere?
+			currentPositionRotated -= rayStepSize * lightDirectionRotated;
+			dist = distance(currentPositionRotated, bodyPositionRotated); // Recalculate for the for loop as well as the check below
+
+			vec3 texelVector = currentPositionRotated - bodyPositionRotated;
 			texelVector.y *= -1.0; // No idea why the y flip is needed
 			float heightHere = Texel(heightmap, texelVector).r;
-			if (distance(currentPosition, bodyPosition) <= bodyRadius + heightHere) {
+			if (dist <= bodyRadius + heightHere) {
 				hitWall = true;
 				break;
 			}

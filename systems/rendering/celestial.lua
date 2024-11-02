@@ -141,6 +141,8 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 		self.bodyShader:send("bodyRadius", body.celestialRadius.value)
 
 		self.bodyShader:send("enableSelfShadowing", true)
+		local inverseBodyOrientationMatrix = mat4.rotate(quat.inverse(body.celestialOrientationState.value)) -- I think this serves the same purpose as... modelToWorldNormal? worldToModelNormal?
+		self.bodyShader:send("inverseBodyOrientationMatrix", {util.toMat3(inverseBodyOrientationMatrix)})
 
 		self.bodyShader:send("isStar", not not body.starData)
 		self.bodyShader:send("time", drawTime)
