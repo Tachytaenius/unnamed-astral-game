@@ -164,7 +164,7 @@ vec3 getAverageFormShadowAndColourAtPointNormalSelfShadow(
 		bool hitWall = false;
 		float dist = distance(currentPositionRotated, bodyPositionRotated);
 		while (dist <= bodyRadius + heightmapMax) { // Are we within the max sphere?
-			currentPositionRotated -= rayStepSize * lightDirectionRotated;
+			currentPositionRotated += rayStepSize * lightDirectionRotated;
 			dist = distance(currentPositionRotated, bodyPositionRotated); // Recalculate for the for loop as well as the check below
 
 			vec3 texelVector = currentPositionRotated - bodyPositionRotated;
