@@ -335,8 +335,14 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 			local rotationAxisRotation = quat.fromAxisAngle(util.randomInSphereVolume(consts.tau * 0.1)) -- Used to perturb rotation axis off forward vector
 			local rotationAxis = vec3.rotate(consts.forwardVector, rotationAxisRotation)
 			local initialAngle = love.math.random() * consts.tau
-			local surfaceSpeed = util.randomRange(0.5, 1) * 50000 -- TODO TEMP
-			local angularSpeed = surfaceSpeed / body.celestialRadius.value
+			-- local surfaceSpeed = util.randomRange(0.5, 1)
+			-- local angularSpeed = surfaceSpeed / body.celestialRadius.value
+			local hours = 60 * 60 -- In seconds
+			local dayLength = -- (Sidereal day, stored in seconds) simple model ig
+				bodyType == "gaseous" and util.randomRange(6, 12) * hours
+				or bodyType == "rocky" and util.randomRange(16, 28) * hours
+				or bodyType == "star" and util.randomRange(20, 30) * 24 * hours -- Stellar rotation takes a lot longer, so the range is expressed in days
+			local angularSpeed = consts.tau / dayLength
 			body:give("celestialRotation", rotationAxis, initialAngle, angularSpeed)
 
 			local seed = love.math.random(0, 2 ^ 32 - 1)
