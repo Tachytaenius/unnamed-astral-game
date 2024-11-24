@@ -56,3 +56,13 @@ function love.draw()
 		(state.notEnoughCubemapTextureSlotsWarning and "Not enough celestial body cubemap texture slots, some bodies may render wrong" or "") .. "\n"
 	)
 end
+
+function love.keypressed(key)
+	if key == settings.controls.drawElements.toggleOrbitLines then
+		settings.graphics.drawOrbitLines = not settings.graphics.drawOrbitLines
+	elseif key == settings.controls.drawElements.toggleBodyReticles then
+		settings.graphics.drawBodyReticles = not settings.graphics.drawBodyReticles
+	elseif key == settings.controls.drawElements.toggleConstellations then
+		settings.graphics.drawConstellations = not settings.graphics.drawConstellations
+	end
+end

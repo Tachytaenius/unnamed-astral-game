@@ -25,7 +25,7 @@ function rendering:init()
 	self.lightCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f", linear = true})
 	self.positionCanvas = love.graphics.newCanvas(w, h, {format = "rgba32f", linear = true})
 	self.depthBuffer = love.graphics.newCanvas(w, h, {format = "depth32f"})
-	self.HUDCanvas = love.graphics.newCanvas(w, h)
+	self.HUDAndConstellationCanvas = love.graphics.newCanvas(w, h)
 
 	-- Images
 	self.dummyTexture = love.graphics.newImage(love.image.newImageData(1, 1))

@@ -5,7 +5,8 @@ return {
 		canvasScale = 1,
 		fullscreen = false,
 		drawOrbitLines = true,
-		drawBodyReticles = true
+		drawBodyReticles = true,
+		drawConstellations = true
 	},
 	controls = {
 		celestialCamera = {
@@ -24,6 +25,11 @@ return {
 			rollClockwise = "o",
 
 			setRelativeBody = "space"
+		},
+		drawElements = {
+			toggleOrbitLines = "f1",
+			toggleBodyReticles = "f2",
+			toggleConstellations = "f3"
 		}
 	}
 }

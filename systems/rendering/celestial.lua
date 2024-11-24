@@ -55,6 +55,42 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	self.skyboxShader:send("nonHdrBrightnessMultiplier", consts.pointLuminanceToRGBNonHDR)
 	love.graphics.draw(self.dummyTexture, 0, 0, 0, self.lightCanvas:getDimensions())
 
+	if settings.graphics.drawConstellations then
+		-- Draw constellations
+		love.graphics.push("all")
+		love.graphics.setCanvas(self.HUDAndConstellationCanvas)
+		love.graphics.clear()
+		love.graphics.setWireframe(true)
+		love.graphics.setShader(self.lineShader)
+		self.lineShader:send("useStartAndOffset", true)
+		local cameraToClipForDirections = mat4.perspectiveLeftHanded(
+			aspectRatio,
+			verticalFOV,
+			1.5,
+			0.5
+		)
+		local worldToClipForDirections = cameraToClipForDirections * worldToCamera
+		self.lineShader:send("worldToClip", {mat4.components(worldToClipForDirections)})
+		local galaxy = self:getWorld().state.galaxy
+		for _, constellation in ipairs(galaxy.constellations) do
+			for _, link in ipairs(constellation.links) do
+				local aDir = vec3.normalise(link.a.position - galaxy.originPositionInGalaxy)
+				local bDir = vec3.normalise(link.b.position - galaxy.originPositionInGalaxy)
+				self.lineShader:send("lineStart", {vec3.components(aDir)})
+				self.lineShader:send("lineOffset", {vec3.components(bDir - aDir)})
+				love.graphics.draw(self.lineMesh)
+			end
+		end
+		love.graphics.pop()
+		love.graphics.setShader()
+		love.graphics.setCanvas(self.lightCanvas)
+		love.graphics.push("all")
+		love.graphics.setBlendMode("add")
+		love.graphics.setColor(0.5, 0.5, 0.5)
+		love.graphics.draw(self.HUDAndConstellationCanvas)
+		love.graphics.pop()
+	end
+
 	-- Sort out what to draw and how
 	local bodiesToDrawDirectly, atmosphereBodiesToDraw, bodiesToDrawAsPoints = {}, {}, {}
 	for _, body in ipairs(self.bodies) do
@@ -332,7 +368,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	love.graphics.setColor(1, 1, 1)
 
 	-- Draw HUD
-	love.graphics.setCanvas(self.HUDCanvas)
+	love.graphics.setCanvas(self.HUDAndConstellationCanvas)
 	love.graphics.setShader()
 	love.graphics.clear()
 	if settings.graphics.drawBodyReticles then
@@ -343,7 +379,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 			if cameraSpacePosition.z > 0 then
 				local positionProjected = cameraToClip * cameraSpacePosition
 				local positionProjected2D = vec2(positionProjected.x, -positionProjected.y)
-				local screenSpacePos = (positionProjected2D * 0.5 + 0.5) * vec2(self.HUDCanvas:getDimensions())
+				local screenSpacePos = (positionProjected2D * 0.5 + 0.5) * vec2(self.HUDAndConstellationCanvas:getDimensions())
 				love.graphics.circle("line", screenSpacePos.x, screenSpacePos.y, 10)
 			end
 		end
@@ -356,7 +392,7 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	love.graphics.setShader()
 	love.graphics.draw(self.lightCanvas)
 	love.graphics.setShader()
-	love.graphics.draw(self.HUDCanvas)
+	love.graphics.draw(self.HUDAndConstellationCanvas)
 	love.graphics.setCanvas()
 end
 

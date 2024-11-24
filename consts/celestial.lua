@@ -23,4 +23,19 @@ celestial.galaxyOtherStarCount = 250000
 
 celestial.maxGaseousBodyColourSteps = 32
 
+celestial.constellationAcceptableStarCount = 250 -- Use the n brightest stars in constellations
+assert(celestial.constellationAcceptableStarCount <= celestial.galaxyOtherStarCount, "Not enough stars in the galaxy for constellations, increase galaxyOtherStarCount or decrease constellationAcceptableStarCount")
+celestial.constellationCountMin = 16
+celestial.constellationCountMax = 24
+celestial.constellationConnectionMin = 4
+celestial.constellationConnectionMax = 10
+celestial.constellationMinAngularSeparationWithinSame = 0.06
+celestial.constellationMinAngularSeparationOther = 0.075
+celestial.constellationLinkToAlreadyClaimedStarChance = 0.35
+celestial.constellationLinkSeparationMin = 0.05 -- Length of a link
+celestial.constellationLinkSeparationMax = 0.65
+celestial.constellationLinkFailuresBeforeGiveUpOrRetry = 30 -- If constellation has at least constellationConnectionMin links then we give up on adding more to it, else we retry and reset the constellations
+celestial.constellationRetriesBeforeGalaxyRetry = 5
+celestial.constellationMaxAngularSeparationFromStartStar = 0.4
+
 return celestial
