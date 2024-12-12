@@ -345,6 +345,10 @@ local function generateSystem(parent, info, depth, ownI, state, graphicsObjects)
 			local angularSpeed = consts.tau / dayLength
 			body:give("celestialRotation", rotationAxis, initialAngle, angularSpeed)
 
+			if body.keplerOrbit and not (body.keplerOrbit.parent.keplerOrbit) then
+				body:give("equinoxesSolstices", body)
+			end
+
 			local seed = love.math.random(0, 2 ^ 32 - 1)
 			body:give("textureCubemapsSeed", seed)
 

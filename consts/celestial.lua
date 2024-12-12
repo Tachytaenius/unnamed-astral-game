@@ -5,8 +5,8 @@ local celestial = {}
 celestial.gravitationalConstant = 6.6743e-11
 celestial.stefanBoltzmannConstant = 5.6703e-8
 
-celestial.orbitNewtonRaphsonEpsilon = 0.001
-celestial.maxOrbitNewtonRaphsonIterations = 30
+celestial.orbitNewtonRaphsonEpsilon = 0.0001
+celestial.maxOrbitNewtonRaphsonIterations = 100
 
 celestial.cameraResetBodyRadiusDistanceRatio = 6
 celestial.celestialCameraSpeedPerDistance = 1

@@ -371,20 +371,43 @@ function celestial:renderCelestialCamera(outputCanvas, entity)
 	love.graphics.setCanvas(self.HUDAndConstellationCanvas)
 	love.graphics.setShader()
 	love.graphics.clear()
+	local function drawReticle(worldSpacePosition, circleRadius)
+		local cameraSpacePosition = worldToCamera * worldSpacePosition
+		if cameraSpacePosition.z > 0 then
+			local positionProjected = cameraToClip * cameraSpacePosition
+			local positionProjected2D = vec2(positionProjected.x, -positionProjected.y)
+			local screenSpacePos = (positionProjected2D * 0.5 + 0.5) * vec2(self.HUDAndConstellationCanvas:getDimensions())
+			love.graphics.circle("line", screenSpacePos.x, screenSpacePos.y, circleRadius)
+		end
+	end
 	if settings.graphics.drawBodyReticles then
 		love.graphics.setColor(consts.bodyReticleColour)
 		for _, body in ipairs(self.bodies) do
 			local position = body.celestialMotionState.position + positionOffset
-			local cameraSpacePosition = worldToCamera * position
-			if cameraSpacePosition.z > 0 then
-				local positionProjected = cameraToClip * cameraSpacePosition
-				local positionProjected2D = vec2(positionProjected.x, -positionProjected.y)
-				local screenSpacePos = (positionProjected2D * 0.5 + 0.5) * vec2(self.HUDAndConstellationCanvas:getDimensions())
-				love.graphics.circle("line", screenSpacePos.x, screenSpacePos.y, 10)
-			end
+			drawReticle(position, 10)
 		end
 		love.graphics.setColor(1, 1, 1)
 	end
+
+	for _, body in ipairs(self.bodies) do
+		if body.equinoxesSolstices then
+			local parentOffset = body.keplerOrbit.parent.celestialMotionState.position
+			local component = body.equinoxesSolstices
+			local solsticeAPosition = util.getLocalStateVectorsFromMeanAnomaly(component.solsticeAMeanAnomaly, body)
+			local solsticeBPosition = util.getLocalStateVectorsFromMeanAnomaly(component.solsticeBMeanAnomaly, body)
+			local equinoxAPosition = util.getLocalStateVectorsFromMeanAnomaly(component.equinoxAMeanAnomaly, body)
+			local equinoxBPosition = util.getLocalStateVectorsFromMeanAnomaly(component.equinoxBMeanAnomaly, body)
+			love.graphics.setColor(1, 0, 0)
+			drawReticle(solsticeAPosition + parentOffset + positionOffset, 6)
+			drawReticle(solsticeBPosition + parentOffset + positionOffset, 6)
+			love.graphics.setColor(0, 1, 0)
+			drawReticle(equinoxAPosition + parentOffset + positionOffset, 6)
+			drawReticle(equinoxBPosition + parentOffset + positionOffset, 6)
+		end
+	end
+	love.graphics.setColor(1, 1, 1)
+
+	-- love.graphics.circle("line", self.HUDAndConstellationCanvas:getWidth() / 2, self.HUDAndConstellationCanvas:getHeight() / 2, 4)
 
 	-- Draw light canvas to output canvas, then draw HUD canvas too
 	love.graphics.setCanvas(outputCanvas)
